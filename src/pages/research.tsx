@@ -1,12 +1,10 @@
 import clsx from "clsx"
 import Head from "next/head"
-import { Dispatch, SetStateAction, useEffect } from "react";
+import { Dispatch, SetStateAction } from "react";
 import Paper from "@/components/papers";
 
 export default function Home({dark, globalPageHandler} : {dark : boolean, globalPageHandler: Dispatch<SetStateAction<String>>}) {
-  useEffect(
-    ()=>{globalPageHandler("research")}
-  )
+  globalPageHandler("research")
   return (
     <>
       <Head>

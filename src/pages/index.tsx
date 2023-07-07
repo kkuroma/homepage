@@ -1,12 +1,10 @@
 import clsx from "clsx"
 import Head from "next/head"
 import HomePage from "@/components/home";
-import { Dispatch, SetStateAction, useEffect } from "react";
+import { Dispatch, SetStateAction } from "react";
 
 export default function Home({dark, globalPageHandler} : {dark : boolean, globalPageHandler: Dispatch<SetStateAction<String>>}) {
-  useEffect(
-    ()=>{globalPageHandler("home")}
-  )
+  globalPageHandler("home")
   return (
     <>
       <Head>

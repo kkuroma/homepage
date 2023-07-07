@@ -7,7 +7,7 @@ const HomePage = ({ dark }: { dark: boolean }) => {
     <>
       <div className="container flex flex-col items-center justify-center gap-8 px-4 py-32 text-center">
         <h1 className={clsx("text-5xl font-extrabold tracking-tight) sm:text-[5rem]", dark ? "text-white" : "text-black")}>
-          Hey guys! I'm <span className={dark ? "text-blue-400" : "text-rose-800"}>KK</span>
+          Hey guys! I am <span className={dark ? "text-blue-400" : "text-rose-800"}>KK</span>
         </h1>
         <h2 className={clsx("text-l font-bold tracking-tight) sm:text-[2rem]", dark ? "text-white" : "text-black")}>
           <span className={dark ? "text-blue-400" : "text-rose-800"}>Deep Learning</span> Researcher /
@@ -74,7 +74,7 @@ const HomePage = ({ dark }: { dark: boolean }) => {
 
             <Link
               className={clsx("w-32 aspect-square flex max-w-xs flex-col gap-1 rounded-xl text-l", dark?"bg-white/10 p-4 text-white hover:bg-white/20":"bg-black/20 p-4 text-black hover:bg-black/30")}
-              href="https://konkuad.github.io/resume.pdf"
+              href="/resume.pdf"
               target="_blank"
             ><svg
                 xmlns="http://www.w3.org/2000/svg"

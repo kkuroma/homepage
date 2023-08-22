@@ -3,9 +3,9 @@ import Link from "next/link"
 import Image from 'next/image'
 
 const Logo = ({path} : {path : string}) => {
-  return <Image src={path} height={90} alt="logo" 
+  return <Image src={path} alt="logo" 
     style={{objectFit:"contain"}}
-    className={"rounded-2xl shadow-xl"}
+    className={"rounded-2xl shadow-xl h-20 w-20"}
   />
 }
 
@@ -73,7 +73,7 @@ const Intro = ({dark} : {dark : boolean}) => {
               Python is the first (and primary) programming language I learned, since most state-of-the-art machine learning tools are wrapped as python libraries. 
               From here, I begin my adventures through machine learning research and projects! Here is a short list of programming languages and tools I've used since then:
             </p>
-            <div className="container flex flex-row items-center justify-center gap-8">
+            <div className="container flex flex-row items-center justify-center gap-8 scale-50 md:scale-100">
               <Logo path={require("@/images/python.png")}/>
               <Logo path={require("@/images/torch.png")}/>
               <Logo path={require("@/images/tf.png")}/>

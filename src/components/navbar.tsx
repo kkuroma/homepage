@@ -62,13 +62,13 @@ const Navbar = (
       </div>
 
       {/* Side Navbar */}
-      <div className={nav ? clsx('md:hidden fixed left-0 top-0 w-full h-screen ',dark?"bg-white/30":"bg-black/60") : ''} onClick={handleNav}>
+      <div className={nav ? clsx('font-bold md:hidden fixed left-0 top-0 w-full h-screen ',dark?"bg-white/30":"bg-black/60") : ''} onClick={handleNav}>
         {/* Side Drawer Menu */}
         <div
           className={
             nav
               ? 
-              clsx('flex flex-col gap-4 fixed left-0 top-0 w-[50%] sm:w-[50%] md:w-[45%] h-screen p-10 ease-in duration-500',dark?"bg-black":"bg-gray-200")
+              clsx('flex flex-col gap-4 fixed left-0 top-0 w-[60%] sm:w-[60%] md:w-[45%] h-screen p-10 ease-in duration-500',dark?"bg-black":"bg-gray-200")
               : 'flex flex-col gap-4 fixed left-[-100%] top-0 w-[50%] sm:w-[60%] md:w-[45%] h-screen p-10 ease-in duration-500'
           }
         >

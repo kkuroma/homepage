@@ -47,10 +47,10 @@ const Navbar = (
                 href="/origami"
               >🎨 Origami </Link>
             </li>
-            <li className={clsx('ml-6 rounded-2xl',(page.localeCompare("blog")==0)?clsx("font-bold border-2",dark?"border-white":"border-black"):"")}>
+            <li className={clsx('ml-6 rounded-2xl',(page.localeCompare("blogs")==0)?clsx("font-bold border-2",dark?"border-white":"border-black"):"")}>
               <Link
                 className={clsx("hover:shadow-xl flex max-w-xs flex-col gap-1 rounded-xl text-l", dark?"bg-white/10 p-4 text-white hover:bg-white/20":"bg-black/20 p-4 text-black hover:bg-black/30")}
-                href="/"
+                href="/blogs"
               >📝 Blogs </Link>
             </li>
           </ul>
@@ -99,7 +99,7 @@ const Navbar = (
           <div className={clsx('rounded-2xl',(page.localeCompare("blogs")==0)?clsx("font-bold border-2",dark?"border-white":"border-black"):"")}>
             <Link
               className={clsx("hover:shadow-xl flex max-w-xs flex-col gap-1 rounded-xl text-l", dark?"bg-white/10 p-4 text-white hover:bg-white/20":"bg-black/20 p-4 text-black hover:bg-black/30")}
-              href="/origami"
+              href="/blogs"
             >📝 Blogs </Link>
           </div>
         </div>

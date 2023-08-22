@@ -1,13 +1,18 @@
 import clsx from "clsx";
 import { Dispatch, SetStateAction } from "react";
+import Head from "next/head"
 
 const errorPage = ({ dark, globalPageHandler }: { dark: boolean, globalPageHandler: Dispatch<SetStateAction<String>> }) => {
   globalPageHandler("error");
   return (
     <>
-      <title>⚠️ 404 Not Found</title>
-      <meta name="description" content="Landing Page" />
-      <link rel="icon" href="/" />
+      <Head>
+        <title>⚠️ 404 Not Found</title>
+        <meta name="description" content="Landing Page" />
+        <link rel="icon" href="/" />
+        <link rel="preconnect" href="https://fonts.googleapis.com"></link>
+        <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;1,200&display=swap" rel="stylesheet"></link>
+      </Head> 
       <main className={clsx("flex min-h-screen flex-col items-center justify-center", dark ? 'bg-gradient-to-b from-black to-indigo-950' : 'bg-gradient-to-b from-gray-300 to-white')}>
         <div className="w-[100%] container flex flex-col items-center justify-center gap-16 px-4 py-32 text-center">
           <h1 className={clsx("text-5xl font-extrabold tracking-tight) sm:text-[5rem]", dark ? "text-white" : "text-black")}>

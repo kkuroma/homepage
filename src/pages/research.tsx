@@ -11,6 +11,8 @@ export default function Home({dark, globalPageHandler} : {dark : boolean, global
         <title>🧪 KK | Research</title>
         <meta name="description" content="Landing Page" />
         <link rel="icon" href="/" />
+        <link rel="preconnect" href="https://fonts.googleapis.com"></link>
+        <link href="https://fonts.googleapis.com/css2?family=Nunito:ital@0;1&display=swap" rel="stylesheet"></link>
       </Head>
       <main className={clsx("flex min-h-screen flex-col items-center justify-center",dark ? 'bg-gradient-to-b from-black to-indigo-950' : 'bg-gradient-to-b from-gray-300 to-white')}>
         <Paper dark={dark}/>

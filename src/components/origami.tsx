@@ -121,7 +121,7 @@ const Origami = ({ dark }: { dark: boolean }) => {
               </div>
             </div>
             <p className={clsx("md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
-              ...and several more I've yet to covered!
+              ...and several more I've yet to cover!
             </p>
         </div>
       </div>

@@ -74,13 +74,13 @@ const Intro = ({dark} : {dark : boolean}) => {
               From here, I begin my adventures through machine learning research and projects! Here is a short list of programming languages and tools I've used since then:
             </p>
             <div className="container flex flex-row items-center justify-center gap-8 scale-50 md:scale-100">
-              <Logo path={require("@/images/python.png")}/>
-              <Logo path={require("@/images/torch.png")}/>
-              <Logo path={require("@/images/tf.png")}/>
-              <Logo path={require("@/images/numpy.png")}/>
-              <Logo path={require("@/images/js.png")}/>
-              <Logo path={require("@/images/ts.png")}/>
-              <Logo path={require("@/images/java.png")}/>
+              <Logo path={require("@/images/logo/python.png")}/>
+              <Logo path={require("@/images/logo/torch.png")}/>
+              <Logo path={require("@/images/logo/tf.png")}/>
+              <Logo path={require("@/images/logo/numpy.png")}/>
+              <Logo path={require("@/images/logo/js.png")}/>
+              <Logo path={require("@/images/logo/ts.png")}/>
+              <Logo path={require("@/images/logo/java.png")}/>
             </div>
             <p className={clsx("md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
               Further details on my works and expertise can be found <Link href="/resume.pdf" target="_blank"><b>here!</b></Link>.

@@ -1,4 +1,5 @@
 import clsx from "clsx"
+import Link from "next/link";
 
 const Papers = ({ dark }: { dark: boolean }) => {
   return (
@@ -47,7 +48,7 @@ const Papers = ({ dark }: { dark: boolean }) => {
                 I interned as an AI engineer and worked on predicting potentially active research areas based on the number of papers over the past 10 years.
               </li>
               <li>
-                My team and I implemented an unsupervised approach to group a large number of papers into category using relations via citations.
+                My team and I implemented an unsupervised approach to group a large number of papers into many categories using hints from citations.
               </li>
             </ul>
             <p className={clsx("md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
@@ -73,14 +74,20 @@ const Papers = ({ dark }: { dark: boolean }) => {
             </h2>
             <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
             <ul className={clsx("list-inside list-disc md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
-              <li>
-              Osathitporn, P., Sawadwuthikul, G., Thuwajit, P., Ueafuea, K., Mateepithaktham, T., Kunaseth, N., ... & Wilaiprasitporn, T. (2023). RRWaveNet: A Compact End-to-End Multi-Scale Residual CNN for Robust PPG Respiratory Rate Estimation. <i>IEEE Internet of Things Journal</i>.
+              <li> 
+              <Link className="font-bold" href={"https://ieeexplore.ieee.org/abstract/document/9645336/?casa_token=KhmW0IKEHtsAAAAA:AVgmSvh1VJ0mg3xJ3YhhBwSsTQ3GjTzPxV3JdAhcofpFGXsvVGxlmq47JuZ4fnA3bZOwSlm4WcEMqg"}>[Article] </Link> 
+              <Link className="font-bold" href={"https://ieeexplore.ieee.org/abstract/document/9645336/?casa_token=KhmW0IKEHtsAAAAA:AVgmSvh1VJ0mg3xJ3YhhBwSsTQ3GjTzPxV3JdAhcofpFGXsvVGxlmq47JuZ4fnA3bZOwSlm4WcEMqg"}>[Cite] </Link> 
+              RRWaveNet: A Compact End-to-End Multi-Scale Residual CNN for Robust PPG Respiratory Rate Estimation (2023, IEEE Internet of Things Journal)
               </li>
               <li>
-              Thuwajit, P., Rangpong, P., Sawangjai, P., Autthasan, P., Chaisaen, R., Banluesombatkul, N., ... & Wilaiprasitporn, T. (2021). EEGWaveNet: Multiscale CNN-based spatiotemporal feature extraction for EEG seizure detection. <i>IEEE Transactions on Industrial Informatics</i>, 18(8), 5547-5557.
+              <Link className="font-bold" href={"https://ieeexplore.ieee.org/abstract/document/9645336/?casa_token=KhmW0IKEHtsAAAAA:AVgmSvh1VJ0mg3xJ3YhhBwSsTQ3GjTzPxV3JdAhcofpFGXsvVGxlmq47JuZ4fnA3bZOwSlm4WcEMqg"}>[Article] </Link> 
+              <Link className="font-bold" href={"https://ieeexplore.ieee.org/abstract/document/9645336/?casa_token=KhmW0IKEHtsAAAAA:AVgmSvh1VJ0mg3xJ3YhhBwSsTQ3GjTzPxV3JdAhcofpFGXsvVGxlmq47JuZ4fnA3bZOwSlm4WcEMqg"}>[Cite] </Link> 
+              EEGWaveNet: Multiscale CNN-based spatiotemporal feature extraction for EEG seizure detection (2021, IEEE Transactions on Industrial Informatics)
               </li>
               <li>
-              Thuwajit P., Banluesombatkul, N., Sawangjai, P., Lakhan, P., & Wilaiprasitporn, T. (2020). Explainable Deep Convolutional Neural Network in EEG Seizure Onset Prediction. <i>IEICE Proceedings Series</i>, 63(SA1-6).
+              <Link className="font-bold" href={"https://ieeexplore.ieee.org/abstract/document/9645336/?casa_token=KhmW0IKEHtsAAAAA:AVgmSvh1VJ0mg3xJ3YhhBwSsTQ3GjTzPxV3JdAhcofpFGXsvVGxlmq47JuZ4fnA3bZOwSlm4WcEMqg"}>[Article] </Link> 
+              <Link className="font-bold" href={"https://ieeexplore.ieee.org/abstract/document/9645336/?casa_token=KhmW0IKEHtsAAAAA:AVgmSvh1VJ0mg3xJ3YhhBwSsTQ3GjTzPxV3JdAhcofpFGXsvVGxlmq47JuZ4fnA3bZOwSlm4WcEMqg"}>[Cite] </Link> 
+              Explainable Deep Convolutional Neural Network in EEG Seizure Onset Prediction (2020, IEICE Proceedings Series)
               </li>
             </ul>
           </div>

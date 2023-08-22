@@ -95,7 +95,7 @@ const Intro = ({dark} : {dark : boolean}) => {
             <ul className={clsx("list-inside list-disc md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
               <li>
                 My actual name is <strong>Konk(r)uad</strong> (Thai: ก้อนกรวด) which can be pretty challenging to pronounce. 
-                The literal translation is "pebble", highlighting my parents' desire for me to lead a grounded life and admire reality as is! 
+                The literal translation is "pebble", highlighting my parents' desire for me to lead a grounded life and to admire reality as is! 
               </li>
               <li>
                 My favorite show is <strong>Code Geass</strong>, a Japanese anime about a prince persumed dead and his crusade to take over his father's corrupt empire. 

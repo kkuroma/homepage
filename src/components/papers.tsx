@@ -55,7 +55,7 @@ const Papers = ({ dark }: { dark: boolean }) => {
             </p>
             <ul className={clsx("list-inside list-disc md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
               <li> 
-                I joined the lab as a high-school student during my early stages into research. The lab, Interfaces, is specialized in biomedical signal processing via machine learning algorithms, 
+                I joined the lab as a high-school student during my early stages into research. The lab, Interfaces (under Prof. Theerawit Wilaiprasitporn), is specialized in biomedical signal processing via machine learning algorithms, 
                 aligning with my interest in machine learning and use cases in medicine.
               </li>
               <li>

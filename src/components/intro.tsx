@@ -1,5 +1,13 @@
 import clsx from "clsx"
 import Link from "next/link"
+import Image from 'next/image'
+
+const Logo = ({path} : {path : string}) => {
+  return <Image src={path} height={90} alt="logo" 
+    style={{objectFit:"contain"}}
+    className={"rounded-2xl shadow-xl"}
+  />
+}
 
 const Intro = ({dark} : {dark : boolean}) => {
   return (
@@ -50,13 +58,50 @@ const Intro = ({dark} : {dark : boolean}) => {
 
           <div className="w-[100%] container flex flex-col text-start justify-center gap-4">
             <h2 className={clsx("text-3xl font-bold tracking-tight) md:text-[2rem] sm:text-[1.5rem]", dark ? "text-white" : "text-black")}>
-              ⚙️ Skills and Experiences
+              ⚙️ Skills and Expertise
             </h2>
             <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
             <p className={clsx("md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
-              Academics and Technology
+              I began my academic career with <strong>competitive mathematics</strong>, that refers to math contests leading
+              up to the prestigious International Mathematics Olympiad (IMO). I progressed through this olympiad route up to the
+              IMO final selection, learning several <strong>proof-based</strong> mathematics concepts along the way. The favorite
+              technique I learned is inversion geometry, which is the transformation of geometric objects under distance inversion
+              from a circle - this allows amazing conversions to be made (i.e. converting tangent circles into parallel lines!).
             </p>
-            
+            <p className={clsx("md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
+              Around the start of the COVID-19 pandemic, I picked up <strong>machine learning</strong> and thus began <strong>programming</strong> as a whole. 
+              Python is the first (and primary) programming language I learned, since most state-of-the-art machine learning tools are wrapped as python libraries. 
+              From here, I begin my adventures through machine learning research and projects! Here is a short list of programming languages and tools I've used since then:
+            </p>
+            <div className="container flex flex-row items-center justify-center gap-8">
+              <Logo path={require("@/images/python.png")}/>
+              <Logo path={require("@/images/torch.png")}/>
+              <Logo path={require("@/images/tf.png")}/>
+              <Logo path={require("@/images/numpy.png")}/>
+              <Logo path={require("@/images/js.png")}/>
+              <Logo path={require("@/images/ts.png")}/>
+              <Logo path={require("@/images/java.png")}/>
+            </div>
+            <p className={clsx("md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
+              Further details on my works and expertise can be found <Link href="/resume.pdf" target="_blank"><b>here!</b></Link>.
+            </p>
+          </div>
+
+          <div className="w-[100%] container flex flex-col text-start justify-center gap-4">
+            <h2 className={clsx("text-3xl font-bold tracking-tight) md:text-[2rem] sm:text-[1.5rem]", dark ? "text-white" : "text-black")}>
+            💡 Trivia!
+            </h2>
+            <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
+            <ul className={clsx("list-inside list-disc md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
+              <li>
+                My actual name is <strong>Konk(r)uad</strong> (Thai: ก้อนกรวด) which can be pretty challenging to pronounce. 
+                The literal translation is "pebble", highlighting my parents' desire for me to lead a grounded life and admire reality as is! 
+              </li>
+              <li>
+                My favorite show is <strong>Code Geass</strong>, a Japanese anime about a prince persumed dead and his crusade to take over his father's corrupt empire. 
+                The show has well-executed mecha fight scenes. absolutely amazing protagonist, and a conclusive ending, though some plot points may be written too hastily.
+              </li>
+            </ul>
           </div>
         </div>
       </div>

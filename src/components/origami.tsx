@@ -62,21 +62,65 @@ const Origami = ({ dark }: { dark: boolean }) => {
               🖼️ Some of my creations
             </h2>
             <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
+
             <p className={clsx("md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
-              <b>Three Headed Dragon 3.0 (designed 2022)</b>
+              <b>Armored Dragon 1.0 (designed 2022)</b>
               <p>
-                This model mainly used 22.5 designs for the main structures while incorporating details via 32-box grids around the corners. The torso design mirrors Satoshi Kamiya's divine dragon 
-                for a strong and menacing stature. I wasn't entirely satisfied with the how small the wings ended up being.
+                This twist to the three headed dragon. I repurposed the dragon's two rear head into oversized wings. 
+                This allowed the old wings to be constructed into a pair of longer legs - giving the final product a slender look. 
+                The remaining flaps are then pleated and shaped into armor throughout the dragon's body. 
+                Certain ratios and shaping were still finicky though, especially those reshaped from the three headed dragon.
               </p>
             </p>
             <div className="container flex flex-row items-center justify-center ">
-                <Image src={require("@/images/origami/3headed.png")} alt="image" 
-                  style={{objectFit:"contain"}}
-                  className={"rounded-2xl shadow-xl w-auto"}
-                />
-              </div>
-          </div>
+              <Image src={require("@/images/origami/armored.png")} alt="image" 
+                style={{objectFit:"contain"}}
+                className={"rounded-2xl shadow-xl w-auto"}
+              />
+            </div>
 
+            <p className={clsx("md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
+              <b>Three Headed Dragon 3.0 (designed 2022)</b>
+              <p>
+                The final iteration of the three-headed dragon following many tries, this model mainly used 22.5 designs for the main structures while incorporating details via 32-box grids around the corners. 
+                The torso design mirrors Satoshi Kamiya's divine dragon for a bulky stature. I wasn't entirely satisfied with the how small the wings ended up being though.
+              </p>
+            </p>
+            <div className="container flex flex-row items-center justify-center ">
+              <Image src={require("@/images/origami/3headed.png")} alt="image" 
+                style={{objectFit:"contain"}}
+                className={"rounded-2xl shadow-xl w-auto"}
+              />
+            </div>
+
+            <p className={clsx("md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
+              <b>Nazgul (designed 2022)</b>
+              <p>
+                The early stages of messing with the three headed dragon base, I shaped the structure into a person riding a horse and it turned out well. 
+                I'll give this model a revisit and refinement in the future.
+              </p>
+            </p>
+            <div className="container flex flex-row items-center justify-center ">
+              <Image src={require("@/images/origami/nazgul.png")} alt="image" 
+                style={{objectFit:"contain"}}
+                className={"rounded-2xl shadow-xl w-auto"}
+              />
+            </div>
+
+            <p className={clsx("md:text-[1.15rem] sm:text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
+              <b>Medieval King (designed 2022)</b>
+              <p>
+                The first every model I consider my original design, this model applies partial 32-box grid to a 22.5 human base (an idea that became my signature later on). 
+                The model was designed to support its own weight and stand upright. Armor parts were added at the end.
+              </p>
+            </p>
+            <div className="container flex flex-row items-center justify-center ">
+              <Image src={require("@/images/origami/king.png")} alt="image" 
+                style={{objectFit:"contain"}}
+                className={"rounded-2xl shadow-xl w-auto"}
+              />
+            </div>
+          </div>
       </div>
     </>
   )

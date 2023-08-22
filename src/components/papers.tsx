@@ -6,7 +6,7 @@ const Papers = ({ dark }: { dark: boolean }) => {
     <>
       <div className="w-[100%] container flex flex-col items-center justify-center gap-16 px-4 py-32 text-center">
         <h1 className={clsx("text-5xl font-extrabold tracking-tight) sm:text-[5rem]",dark?"text-white":"text-black")}>
-          My <span className={dark?"text-blue-400":"text-rose-800"}>Research</span> Interests!
+          My <span className={dark?"text-blue-500":"text-rose-800"}>Research</span> Interests!
         </h1>
         <div className="md:w-[80%] sm:w-[100%] container flex flex-col items-center justify-center px-8 gap-8">
 

@@ -21,12 +21,14 @@ const PaperEntry = ({
  }) => {
   const [visible, setVisible] = useState(false)
   return <>
-  <div className={clsx("md:text-[1.15rem] text-[0.8rem] rounded-2xl text-center", dark ? "bg-white/20 text-white":"bg-black/5 text-black")}>
+  <div className={clsx("md:text-[1.15rem] text-[0.8rem] rounded-2xl text-center", dark ? "bg-white/10 text-white":"bg-black/5 text-black")}>
     <p className="mt-4 ml-6 mr-6 mb-2 font-bold">{paperName}</p>
     <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
     <p className="ml-6 mr-6 mt-2">{year} - {journal}</p>
     <p className="mb-4 ml-6 mr-6"><Link href={url}>🔗 Article</Link> || <button onClick={() => navigator.clipboard.writeText(citation)}>📁 Copy Citation</button> || <button onClick={()=>{setVisible(!visible)}}>☰ {visible ? "Hide" : "Show"} Description</button></p>
-    <p className={clsx("text-start mb-4 ml-6 mr-6", visible ? "" : "hidden")}>{desc}</p>
+    <div className={clsx(clsx("flex ease-in-out duration-500 text-start mb-4 ml-6 mr-6 rounded-2xl", dark ? "bg-white/10 text-white":"bg-black/5 text-black"), visible ? "" : "hidden")}>
+    <p className="mt-4 ml-6 mr-6 mb-4">{desc}</p>
+    </div>
   </div>
   </>
  }
@@ -110,7 +112,9 @@ const Papers = ({ dark }: { dark: boolean }) => {
               year = {"2023"}
               citation = {"Osathitporn, P., Sawadwuthikul, G., Thuwajit, P., Ueafuea, K., Mateepithaktham, T., Kunaseth, N., ... & Wilaiprasitporn, T. (2023). RRWaveNet: A Compact End-to-End Multi-Scale Residual CNN for Robust PPG Respiratory Rate Estimation. IEEE Internet of Things Journal."}
               url = {"https://ieeexplore.ieee.org/abstract/document/10098530/?casa_token=JPxrViFX_g8AAAAA:9rRdyCxIoqs-8XAPn2Zd7PZgv_0PJbfFDw7rv3yNvFIkn_XTRfFZ3sR_DK-DddLKT9wTZLorG05rnXc"}
-              desc = {"Stuff"}
+              desc = {"This paper details a convolutional neural network architecture that learns to predict a person's breathing rate given a segment of PPG signal. \
+              The model uses a parallel multi-scale module to take in account of different breathing patterns and rates simultaneously, leading to its robustness across several dataset. \
+              It is also able to adapt its performance via transfer learning across several cohorts."}
             />
             <PaperEntry
               dark = {dark}
@@ -119,7 +123,9 @@ const Papers = ({ dark }: { dark: boolean }) => {
               year = {"2021"}
               citation = {"Thuwajit, P., Rangpong, P., Sawangjai, P., Autthasan, P., Chaisaen, R., Banluesombatkul, N., ... & Wilaiprasitporn, T. (2021). EEGWaveNet: Multiscale CNN-based spatiotemporal feature extraction for EEG seizure detection. IEEE Transactions on Industrial Informatics, 18(8), 5547-5557."}
               url = {"https://ieeexplore.ieee.org/abstract/document/9645336/?casa_token=WRtcZRJspZ0AAAAA:ycWAPOhRnW5Ag1XTfPzhnY5vJKcZtL_Jpr6yuRVJEy21TTbuMXmm4U5gOJf-MfYq_kurPlb5PvkUcdM"}
-              desc = {"Stuff"}
+              desc = {"This paper introduces a novel and compact convolutional neural network classifier that differentiates a given EEG signal as belonging to seizure event or not. \
+              The model's sequential multi-scale module amplify the abnormalities between seizure and normal throughout each multi-scale layer. \
+              It is also able to adapt to a person's characteristic seizure patterns given short labels of the person's EEG."}
             />
             <PaperEntry
               dark = {dark}
@@ -128,7 +134,9 @@ const Papers = ({ dark }: { dark: boolean }) => {
               year = {"2020"}
               citation = {"THUWAJIT, P., BANLUESOMBATKUL, N., SAWANGJAI, P., LAKHAN, P., & WILAIPRASITPORN, T. (2020). Explainable Deep Convolutional Neural Network in EEG Seizure Onset Prediction. IEICE Proceedings Series, 63(SA1-6)."}
               url = {"https://www.ieice.org/publications/proceedings/summary.php?expandable=8&iconf=ICETC&session_num=SA1&number=SA1-6&year=2020"}
-              desc = {"Stuff"}
+              desc = {"This proceeding/presentation describes the relation between a seizure-event EEG and a convolutional neural network's predictions. \
+              In short, the model's accurate prediction is a result from the detection and amplification of abnormal peaks through the learning process. \
+              This finding leads to the development of EEGWaveNet - my first peer-reviewed publication."}
             />
           </div>
           <div className={clsx("gap-4 font-bold",dark ? 'text-white' : 'text-black')}>

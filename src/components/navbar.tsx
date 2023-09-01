@@ -68,8 +68,8 @@ const Navbar = (
           className={
             nav
               ? 
-              clsx('flex flex-col gap-4 fixed left-0 top-0 w-[60%] sm:w-[60%] md:w-[45%] h-screen p-10 ease-in duration-500',dark?"bg-black":"bg-gray-200")
-              : 'flex flex-col gap-4 fixed left-[-100%] top-0 w-[50%] sm:w-[60%] md:w-[45%] h-screen p-10 ease-in duration-500'
+              clsx('flex flex-col gap-4 fixed left-0 top-0 w-[60%] sm:w-[60%] md:w-[45%] h-screen p-10 ease-in-out duration-500',dark?"bg-black":"bg-gray-200")
+              : 'flex flex-col gap-4 fixed left-[-100%] top-0 w-[50%] sm:w-[60%] md:w-[45%] h-screen p-10 ease-in-out duration-500'
           }
         >
           <div className={clsx('rounded-2xl',(page.localeCompare("home")==0)?clsx("font-bold border-2",dark?"border-white":"border-black"):"")}>

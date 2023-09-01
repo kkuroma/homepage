@@ -6,10 +6,10 @@ const HomePage = ({ dark }: { dark: boolean }) => {
   return (
     <>
       <div className="container flex flex-col items-center justify-center gap-8 px-4 py-32 text-center">
-        <h1 className={clsx("text-5xl font-extrabold tracking-tight) sm:text-[5rem]", dark ? "text-white" : "text-black")}>
+        <h1 className={clsx("md:text-6xl text-4xl font-extrabold tracking-tight) text-[5rem]", dark ? "text-white" : "text-black")}>
           Hey guys! I am <span className={dark ? "text-blue-500" : "text-rose-800"}>KK</span>
         </h1>
-        <h2 className={clsx("text-l font-bold tracking-tight) sm:text-[2rem]", dark ? "text-white" : "text-black")}>
+        <h2 className={clsx("md:text-[2rem] text-[1.25rem] font-bold tracking-tight)", dark ? "text-white" : "text-black")}>
           <span className={dark ? "text-blue-500" : "text-rose-800"}>Deep Learning</span> Researcher /
           <span className={dark ? "text-blue-500" : "text-rose-800"}> Math</span>ematician /
           <span className={dark ? "text-blue-500" : "text-rose-800"}> Origami</span> Artist
@@ -21,12 +21,12 @@ const HomePage = ({ dark }: { dark: boolean }) => {
           alt="KK's actual face"
           className={clsx("rounded-2xl shadow-xl border-8", dark ? "border-white" : "border-black")}
         />
-        <div className="md:w-[80%] sm:w-[100%] container flex flex-col items-center justify-center px-8 gap-1">
-          <h1 className={clsx("text-3xl font-bold tracking-tight) sm:text-[2rem]", dark ? "text-white" : "text-black")}>
+        <div className="md:w-[80%] w-[100%] container flex flex-col items-center justify-center px-8 gap-1">
+          <h1 className={clsx("text-3xl font-bold tracking-tight) text-[2rem]", dark ? "text-white" : "text-black")}>
             Welcome to my website!
           </h1>
           <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
-          <p className={clsx("text-l tracking-tight) sm:text-[1rem]", dark ? "text-white" : "text-black")}>
+          <p className={clsx("text-l tracking-tight) text-[1rem]", dark ? "text-white" : "text-black")}>
             Last Updated: August 2023
           </p>
         </div>
@@ -85,6 +85,11 @@ const HomePage = ({ dark }: { dark: boolean }) => {
                 <path d="M478.859 111.609H340.506V77.877c0-9.152-7.419-16.57-16.57-16.57H188.065c-9.152 0-16.57 7.419-16.57 16.57v33.731H33.141C14.867 111.609 0 126.476 0 144.75v65.016c0 11.835 6.34 22.775 16.57 28.686v195.67c0 9.152 7.419 16.57 16.57 16.57h445.719c9.152 0 16.57-7.419 16.57-16.57V238.45c10.23-5.909 16.57-16.849 16.57-28.686v-65.016c.001-18.272-14.866-33.139-33.14-33.139zM204.636 94.447h102.729v17.161H204.636V94.447zM462.289 417.55H49.711V256.974l153.628 85.78 6.267 3.499v13.305c0 9.152 7.419 16.57 16.57 16.57H285.827c9.152 0 16.57-7.419 16.57-16.57v-13.304l159.893-89.28V417.55zm-219.544-74.561v-36.983h26.509v36.983h-26.509zm236.114-133.224c-8.041 4.49-168.977 94.353-176.464 98.532v-9.027c0-14.56-11.845-26.405-26.405-26.405h-39.98c-14.56 0-26.405 11.845-26.405 26.405v9.026L33.141 209.764V144.75h445.718v65.015z" />
               </svg>
             </Link>
+        </div>
+        <div className={clsx("gap-4 font-bold",dark ? 'text-white' : 'text-black')}>
+          <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
+          <p>© 2023 | KK (Punnawish Thuwajit)</p>
+          <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
         </div>
       </div>
     </>

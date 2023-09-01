@@ -6,7 +6,7 @@ const HomePage = ({ dark }: { dark: boolean }) => {
   return (
     <>
       <div className="container flex flex-col items-center justify-center gap-8 px-4 py-32 text-center">
-        <h1 className={clsx("md:text-6xl text-4xl font-extrabold tracking-tight) text-[5rem]", dark ? "text-white" : "text-black")}>
+        <h1 className={clsx("md:text-[5rem] text-[3rem] font-extrabold tracking-tight", dark ? "text-white" : "text-black")}>
           Hey guys! I am <span className={dark ? "text-blue-500" : "text-rose-800"}>KK</span>
         </h1>
         <h2 className={clsx("md:text-[2rem] text-[1.25rem] font-bold tracking-tight)", dark ? "text-white" : "text-black")}>

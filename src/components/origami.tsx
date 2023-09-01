@@ -5,7 +5,7 @@ const Origami = ({ dark }: { dark: boolean }) => {
   return (
     <>
       <div className="w-[100%] container flex flex-col items-center justify-center gap-16 px-4 py-32 text-center">
-        <h1 className={clsx("md:text-6xl text-4xl font-extrabold tracking-tight) text-[5rem]", dark ? "text-white" : "text-black")}>
+        <h1 className={clsx("md:text-[5rem] text-[3rem] font-extrabold tracking-tight", dark ? "text-white" : "text-black")}>
           My <span className={dark ? "text-blue-500" : "text-rose-800"}>Origami</span> Creations!
         </h1>
         <div className="md:w-[80%] w-[100%] container flex flex-col items-center justify-center px-8 gap-8">

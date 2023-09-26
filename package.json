@@ -18,6 +18,8 @@
     "react-dom": "18.2.0",
     "react-icons": "^4.10.1",
     "react-pdf": "^7.1.2",
+    "remark": "^14.0.3",
+    "remark-html": "^15.0.2",
     "zod": "^3.21.4"
   },
   "devDependencies": {
@@ -40,5 +42,9 @@
   },
   "ct3aMetadata": {
     "initVersion": "7.15.0"
+  },
+  "browser": {
+    "fs": false,
+    "path": false
   }
 }

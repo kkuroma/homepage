@@ -25,9 +25,12 @@ const HomePage = ({ dark }: { dark: boolean }) => {
           <h1 className={clsx("text-3xl font-bold tracking-tight) text-[2rem]", dark ? "text-white" : "text-black")}>
             Welcome to my website!
           </h1>
+          <h1 className={clsx("text-3xl font-bold tracking-tight) text-[2rem]", dark ? "text-white" : "text-black")}>
+            よろしくお願いします！
+          </h1>
           <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
           <p className={clsx("text-l tracking-tight) text-[1rem]", dark ? "text-white" : "text-black")}>
-            Last Updated: August 2023
+            Last Updated: March 2024
           </p>
         </div>
         <div className="container flex flex-row items-center justify-center gap-8">

@@ -50,7 +50,7 @@ const HomePage = ({ dark }: { dark: boolean }) => {
 
             <Link
               className={clsx("w-32 aspect-square flex max-w-xs flex-col gap-1 rounded-xl text-l", dark?"bg-white/10 p-4 text-white hover:bg-white/20":"bg-black/20 p-4 text-black hover:bg-black/30")}
-              href="https://github.com/konkuad"
+              href="https://github.com/kkuroma"
               target="_blank"
             ><svg
                 xmlns="http://www.w3.org/2000/svg"

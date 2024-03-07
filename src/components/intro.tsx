@@ -52,7 +52,7 @@ const Intro = ({dark} : {dark : boolean}) => {
             </p>
             <p className={clsx("md:text-[1.15rem] text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
               Alongside origami, I find Japanese art and entertainment particularly interesting. I really like listening to J-pop and reading mangas in my free time.
-              I'm also learning Japanese, which would effectively make me trilingual! (Update: around N5 level at this moment)
+              I'm also learning Japanese, which would effectively make me trilingual! (Update: around N5 level at this moment、ファイトです！)
             </p>
             <p className={clsx("md:text-[1.15rem] text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
               I've also recently picked up web development as seen with this site!

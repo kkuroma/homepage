@@ -24,8 +24,8 @@ const Intro = ({dark} : {dark : boolean}) => {
             </h2>
             <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
             <p className={clsx("md:text-[1.15rem] text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
-              Hi! I'm <b>KK</b>, a passionate problem solver wielding the power of mathematics and artificial intelligence. 
-              I also go by my given name <b>Punnawish Thuwajit</b> or my online persona <b>Kuroma (クロマ)</b>.
+              Hi! I'm <b>KK Thuwajit</b>, a passionate problem solver wielding the power of mathematics and artificial intelligence. 
+              I also go by my online persona <b>Kuroma (クロマ)</b>.
             </p>
             <p className={clsx("md:text-[1.15rem] text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
               Right now, I'm a sophomore at UW-Madison in mathematics and computer sciences.
@@ -49,7 +49,7 @@ const Intro = ({dark} : {dark : boolean}) => {
             </p>
             <p className={clsx("md:text-[1.15rem] text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
               Alongside origami, I find Japanese art and entertainment particularly interesting. I really like listening to J-pop and reading mangas in my free time.
-              I'm also learning Japanese, which would effectively make me trilingual!
+              I'm also learning Japanese, which would effectively make me trilingual! (Update: around N5 level at this moment)
             </p>
             <p className={clsx("md:text-[1.15rem] text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
               I've also recently picked up web development as seen with this site!
@@ -105,7 +105,7 @@ const Intro = ({dark} : {dark : boolean}) => {
           </div>
           <div className={clsx("gap-4 font-bold",dark ? 'text-white' : 'text-black')}>
             <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
-            <p>© 2023 | KK (Punnawish Thuwajit)</p>
+            <p>© 2024 | P. KK Thuwajit</p>
             <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
           </div>
         </div>

@@ -88,7 +88,7 @@ const HomePage = ({ dark }: { dark: boolean }) => {
         </div>
         <div className={clsx("gap-4 font-bold",dark ? 'text-white' : 'text-black')}>
           <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
-          <p>© 2023 | KK (Punnawish Thuwajit)</p>
+          <p>© 2024 | P. KK Thuwajit</p>
           <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
         </div>
       </div>

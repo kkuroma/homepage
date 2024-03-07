@@ -25,7 +25,10 @@ const Intro = ({dark} : {dark : boolean}) => {
             <hr className={clsx("w-[100%] border-1",dark?"border-white":"border-black")}></hr>
             <p className={clsx("md:text-[1.15rem] text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
               Hi! I'm <b>KK Thuwajit</b>, a passionate problem solver wielding the power of mathematics and artificial intelligence. 
-              I also go by my online persona <b>Kuroma (クロマ)</b>.
+              I also go by my online persona <b>Kuroma (クロマ)</b>
+            </p>
+            <p className={clsx("md:text-[1.15rem] text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
+            こんにちは、ケイケイと申します、クロマは呼んでください。AIや数学について興味がたくさんあるので、ぜひ、話し合いま！
             </p>
             <p className={clsx("md:text-[1.15rem] text-[0.8rem]", dark ? "text-gray-300" : "text-black")}>
               Right now, I'm a sophomore at UW-Madison in mathematics and computer sciences.

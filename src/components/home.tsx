@@ -15,7 +15,7 @@ const HomePage = ({ dark }: { dark: boolean }) => {
           <span className={dark ? "text-blue-500" : "text-rose-800"}> Origami</span> Artist
         </h2>
         <Image
-          src={require("@/images/profile.png")}
+          src={require("@/images/profile.jpg")}
           width={300}
           height={300}
           alt="KK's actual face"

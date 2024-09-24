@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+    <title>Spinny Balls</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 120vh;
+        }
+
+        canvas {
+            border: 1px solid #000;
+            margin-bottom: 20px;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sliders {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            width: 150px;
+        }
+
+        label {
+            font-family: 'Roboto', sans-serif;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        h1 {
+            font-family: 'Roboto', sans-serif;
+            font-size: 30px;
+            color: #333;
+        }
+
+        button {
+            font-family: 'Roboto', sans-serif;
+            font-size: 18px;
+            color: #333;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>An Incredibly Creative Solar System</h1>
+        <div class="slider-container"></div>
+        <canvas id="canvas" width="400" height="400"></canvas>
+        <div class="slider-container">
+            <label for="S" id="SL">Speed</label>
+            <input class="sliders" type="range" min="0" max="1000" value="100" class="slider" id="Speed">
+        </div>
+        <div class="slider-container">
+            <label for="Theta" id="ThetaL">Planar Angle</label>
+            <input class="sliders" type="range" min="0" max="1000" value="100" class="slider" id="Theta">
+        </div>
+        <div class="slider-container">
+            <label for="Phi" id="PhiL">Elevation Angle</label>
+            <input class="sliders" type="range" min="1" max="999" value="600" class="slider" id="Phi">
+        </div>
+        <div class="slider-container"></div>
+            <label for="R" id="RL">Zoom Factor</label>
+            <input class="sliders" type="range" min="0" max="1000" value="250" class="slider" id="Radius">
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        var zoom = 20;
+        var reference = [1,1,1];
+
+        const golden_ratio = (1 + Math.sqrt(5)) / 2; 
+
+        // vector algebra
+
+        function mag(v) {
+            const [x, y, z] = v;
+            return Math.sqrt(x**2+y**2+z**2);
+        }
+
+        function norm(v) {
+            const [x, y, z] = v;
+            const s = mag(v);
+            return [x/s, y/s, z/s];
+        }
+
+        function dotproduct(v1, v2) {
+            const [x1, y1, z1] = v1;
+            const [x2, y2, z2] = v2;
+            return x1*x2 + y1*y2 + z1*z2;
+        }
+
+        function crossProduct(v1, v2) {
+            const [x1, y1, z1] = v1;
+            const [x2, y2, z2] = v2;
+            return [
+                y1*z2 - y2*z1,
+                z1*x2 - z2*x1,
+                x1*y2 - x2*y1
+            ];
+        }
+
+        function add(v1, v2) {
+            const [x1, y1, z1] = v1;
+            const [x2, y2, z2] = v2;
+            return [x2+x1, y2+y1, z2+z1];
+        }
+
+        function difference(v1, v2) {
+            const [x1, y1, z1] = v1;
+            const [x2, y2, z2] = v2;
+            return [x2-x1, y2-y1, z2-z1];
+        }
+
+        function scale(v, s) {
+            const [x, y, z] = v;
+            return [x*s, y*s, z*s];
+        }
+
+        function getbasis(v) {
+            v1 = norm(crossProduct(v,[0,0,1]));
+            v2 = norm(crossProduct(v, v1));
+            return [v1, v2];
+        }
+
+        function project(point, ref) {
+            c = dotproduct(ref,ref) / dotproduct(difference(point, ref),ref);
+            return add(ref, scale(difference(ref,point),c));
+        }
+
+        function canvasProj(point, ref, scale) {
+            const projected = project(point, ref);
+            const [refx, refy] = getbasis(ref);
+            const canvasX = width / 2 + dotproduct(projected, refx) * scale;
+            const canvasY = height / 2 - dotproduct(projected, refy) * scale;
+            return [canvasX, canvasY];
+        }
+
+        // icosahedron classes and definitions
+
+        class Fixedpoint {
+            constructor(coordinate) {
+                this.coordinate = coordinate;
+                this.angle = 0;
+            }
+            center() {
+                return this.coordinate;
+            }
+        }
+
+        class Planet {
+            constructor(parent, distance, angle, size, orbitspeed, rotationspeed, color) {
+                this.vertices = [
+                    [golden_ratio, 1, 0],
+                    [-golden_ratio, 1, 0],
+                    [golden_ratio, -1, 0],
+                    [-golden_ratio, -1, 0],
+                    [1, 0, golden_ratio],
+                    [1, 0, -golden_ratio],
+                    [-1, 0, golden_ratio],
+                    [-1, 0, -golden_ratio],
+                    [0, golden_ratio, 1],
+                    [0, -golden_ratio, 1],
+                    [0, golden_ratio, -1],
+                    [0, -golden_ratio, -1]
+                ];
+                this.parent = parent;
+                this.distance = distance;
+                this.angle = angle + this.parent.angle;
+                this.size = size;
+                this.rotation = 0;
+                this.orbitspeed = orbitspeed;
+                this.rotationspeed = rotationspeed;
+                this.color = color
+            }
+            center() {
+                return add(this.parent.center(), [this.distance * Math.cos(this.angle), this.distance * Math.sin(this.angle), 0]);
+            }
+            getvertices() {
+                var vertices = [];
+                for (let i=0; i<this.vertices.length; i++) {
+                    const [x,y,z] = this.vertices[i];
+                    const newx = x*Math.cos(this.rotation) - y*Math.sin(this.rotation);
+                    const newy = x*Math.sin(this.rotation) + y*Math.cos(this.rotation);
+                    const rotated = [newx*this.size, newy*this.size, z*this.size];
+                    vertices.push(add(rotated, this.center()));
+                }
+                return vertices;
+            }
+            update(t) {
+                this.angle = t*this.orbitspeed;
+                this.rotation = t*this.rotationspeed;
+            }
+            draw(reference, scale) {
+
+                // draw faces
+                const projectedVertices = this.getvertices().map(vertex => canvasProj(vertex, reference, scale));
+                faces.forEach(face => {
+                    
+                    const [start, mid, end, index] = face;
+                    ctx.beginPath();
+                    const [r,g,b,opacity] = this.color;
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+                    
+                    const [x1, y1] = projectedVertices[start];
+                    const [x2, y2] = projectedVertices[mid];
+                    const [x3, y3] = projectedVertices[end];
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.lineTo(x3, y3);
+                    ctx.closePath();
+                    ctx.fill();
+                });
+
+                //draw edges
+                edges.forEach(edge => {
+                    const [start, end] = edge;
+                    const [x1, y1] = projectedVertices[start];
+                    const [x2, y2] = projectedVertices[end];
+
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'black';
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                });
+
+            }
+        }
+
+        const edges = [
+            [0, 2],
+            [0, 4],
+            [0, 5],
+            [0, 8],
+            [0, 10],
+            [1, 3],
+            [1, 6],
+            [1, 7],
+            [1, 8],
+            [1, 10],
+            [2, 4],
+            [2, 5],
+            [2, 9],
+            [2, 11],
+            [3, 6],
+            [3, 7],
+            [3, 9],
+            [3, 11],
+            [4, 6],
+            [4, 8],
+            [4, 9],
+            [5, 7],
+            [5, 10],
+            [5, 11],
+            [6, 8],
+            [6, 9],
+            [7, 10],
+            [7, 11],
+            [8, 10],
+            [9, 11]
+        ];
+
+        const faces = [
+            [0, 2, 4, 0],
+            [0, 2, 5, 1],
+            [0, 4, 8, 2],
+            [0, 5, 10, 3],
+            [0, 8, 10, 4],
+            [1, 3, 6, 5],
+            [1, 3, 7, 6],
+            [1, 6, 8, 7],
+            [1, 7, 10, 8],
+            [1, 8, 10, 9],
+            [2, 4, 9, 10],
+            [2, 5, 11, 11],
+            [2, 9, 11, 12],
+            [3, 6, 9, 13],
+            [3, 7, 11, 14],
+            [3, 9, 11, 15],
+            [4, 6, 8, 16],
+            [4, 6, 9, 17],
+            [5, 7, 10, 18],
+            [5, 7, 11, 19]
+        ];
+
+        // other helper functions
+
+        function polar2cartesian(r, theta, phi) {
+            zoom = 5*(2+r/200)
+            r = 5 + (1000-r)/10;
+            theta = Math.PI * theta / 500;
+            phi = (phi-500) * Math.PI / 1000;
+            const x = r * Math.cos(theta) * Math.cos(phi);
+            const y = r * Math.sin(theta) * Math.cos(phi);
+            const z = r * Math.sin(phi);
+            return [x, y, z];
+        }
+
+        function randomrgb() {
+            const r = Math.floor(Math.random() * 256);
+            const g = Math.floor(Math.random() * 256);
+            const b = Math.floor(Math.random() * 256);
+            return [r,g,b];
+        }
+
+        function getColorMap() {
+            const colorMap = {};
+            for (let i = 0; i < 20; i++) {
+                colorMap[i] = randomrgb();
+            }
+            return colorMap;
+        }
+
+        colorMap = getColorMap();  
+        const origin = new Fixedpoint([0,0,0]);
+        const Sun = new Planet(origin, 0, 0, 1.5, 0, Math.PI/50000, [245, 200, 66, 0.5]);
+        const Mercury = new Planet(Sun, 5, Math.PI/10, 0.3, Math.PI/2000, Math.PI/900, [31, 128, 58, 0.5]);
+        const Venus = new Planet(Sun, 8, Math.PI/8, 0.4, Math.PI/10000, Math.PI/10000, [109, 31, 128, 0.5]);
+        const Earth = new Planet(Sun, 11, Math.PI/6, 0.4, Math.PI/12000, Math.PI/1000, [129, 235, 235, 0.5]);
+        const Moon = new Planet(Earth, 2, Math.PI/4, 0.2, Math.PI/7000, Math.PI/7000, [186, 179, 168, 0.5]);
+        const Mars = new Planet(Sun, 13, Math.PI/3, 0.4, Math.PI/18000, Math.PI/1000, [90, 0, 0, 0.5]);
+        const Planets = [Sun, Mercury, Venus, Earth, Moon, Mars];
+
+        var speed_factor = 1;
+        function draw(t) {
+            ctx.beginPath();
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height); 
+            for(let i=0; i<Planets.length; i++){
+                Planets[i].draw(reference, zoom);
+                Planets[i].update(t*speed_factor);
+            }
+            requestAnimationFrame(draw);
+            console.log(speed_factor);
+        }
+
+        const r = document.getElementById("Radius");
+        const theta = document.getElementById("Theta");
+        const phi = document.getElementById("Phi");
+        const speed = document.getElementById("Speed");
+        
+        var reference = polar2cartesian(parseFloat(r.value), parseFloat(theta.value), parseFloat(phi.value));
+        r.oninput = function() {
+            reference = polar2cartesian(parseFloat(r.value), parseFloat(theta.value), parseFloat(phi.value));
+        } 
+        theta.oninput = function() {
+            reference = polar2cartesian(parseFloat(r.value), parseFloat(theta.value), parseFloat(phi.value));
+        }
+        phi.oninput = function() {
+            reference = polar2cartesian(parseFloat(r.value), parseFloat(theta.value), parseFloat(phi.value));
+        }
+        speed.oninput = function() {
+            speed_factor = parseFloat(speed.value)/100;
+        }
+
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

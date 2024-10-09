@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+    <title>#TEAMTREES, again</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .container2 {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            border: 1px solid #000;
+            margin-bottom: 20px;
+            width: 400px;
+            height: 400px;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sliders {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            width: 150px;
+        }
+
+        label {
+            font-family: 'Roboto', sans-serif;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        h1 {
+            font-family: 'Roboto', sans-serif;
+            font-size: 30px;
+            color: #333;
+        }
+
+        p {
+            font-family: 'Roboto', sans-serif;
+            font-size: 15px;
+            color: #5e5e5e;
+        }
+
+        button {
+            font-family: 'Roboto', sans-serif;
+            font-size: 18px;
+            color: #333;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>L-System Trees, in 3D?</h1>
+        <p>
+            This is the extention of my previous project on L-system trees
+            </br>-> The first 3 sliders control <strong>the camera angle</strong>    
+            </br>-> The next 3 sliders control <strong>the tree's growth and spread</strong>    
+            </br>-> The last 3 sliders control <strong>the leaves' color</strong>    
+        </p>
+        <div class="slider-container"></div>
+        <canvas id="canvas" width="800" height="800"></canvas>
+        <div class="container2">
+            <div class="slider-container">
+                <label for="Theta" id="ThetaL">Planar Angle</label>
+                <input class="sliders" type="range" min="0" max="1000" value="0" class="slider" id="Theta">
+            </div> 
+            <div class="slider-container">
+                <label for="Phi" id="PhiL">Elevation Angle</label>
+                <input class="sliders" type="range" min="0" max="1000" value="0" class="slider" id="Phi">
+            </div>
+            <div class="slider-container">
+                <label for="Dist" id="DistL">Camera Distance</label>
+                <input class="sliders" type="range" min="0" max="1000" value="333" class="slider" id="Dist">
+            </div>
+        </div>
+        <div class="container2">
+            <div class="slider-container">
+                <label for="Depth" id="DL">Depth</label>
+                <input class="sliders" type="range" min="1" max="5" value="3" class="slider" id="Depth">
+            </div>
+            <div class="slider-container">
+                <label for="Spread" id="SL">Z-Spread</label>
+                <input class="sliders" type="range" min="0" max="1000" value="500" class="slider" id="Spread">
+            </div>
+            <div class="slider-container">
+                <label for="Spread2" id="RL">XY-Spread</label>
+                <input class="sliders" type="range" min="0" max="1000" value="0" class="slider" id="Spread2">
+            </div>
+        </div>
+        <div class="container2">
+            <div class="slider-container">
+                <label for="Red">Red</label>
+                <input class="sliders" type="range" min="1" max="255" value="1" class="slider" id="Red">
+            </div>
+            <div class="slider-container">
+                <label for="Green">Green</label>
+                <input class="sliders" type="range" min="1" max="255" value="255" class="slider" id="Green">
+            </div>
+            <div class="slider-container">
+                <label for="Blue">Blue</label>
+                <input class="sliders" type="range" min="1" max="255" value="1" class="slider" id="Blue">
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="gl-matrix-min.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // helper functions
+
+        function customMatrix(i, j, k){
+            // creates a custom matrix
+            // assumes knowledge of where the i, j, k axis goes to
+            let T = mat4.create();
+            T[0] = i[0];
+            T[1] = i[1];
+            T[2] = i[2];
+            T[4] = j[0];
+            T[5] = j[1];
+            T[6] = j[2];
+            T[8] = k[0];
+            T[9] = k[1];
+            T[10] = k[2];
+            return T;
+        }
+
+        function rotationMatrixZ(angle){
+            //rotates down from the z axis, preserving x and y angles of vec
+            let x=1;
+            let y=1;
+            let i = vec3.fromValues(Math.cos(angle), 0, -Math.sin(angle));
+            let j = vec3.fromValues(0, Math.cos(angle), -Math.sin(angle));
+            let s = Math.sqrt(x*x+y*y);
+            let k = vec3.fromValues(x/s*Math.sin(angle), y/s*Math.sin(angle), Math.cos(angle));
+            return customMatrix(i,j,k);
+        }
+
+        function rotationMatrixXY(angle){
+            //rotates WRT the Z axis
+            let i = vec3.fromValues(Math.cos(angle), Math.sin(angle), 0);
+            let j = vec3.fromValues(-Math.sin(angle), Math.cos(angle), 0);
+            let k = vec3.fromValues(0,0,1);
+            return customMatrix(i,j,k);
+        }
+
+        function getBasis(vec){
+            // creates two orthogonal vectors perpendicular to `vec`
+            let z = vec3.fromValues(0, 0, 1);
+            let v1 = vec3.create();
+            vec3.cross(v1, vec, z);
+            vec3.normalize(v1, v1);
+            let v2 = vec3.create();
+            vec3.cross(v2, vec, v1);
+            vec3.normalize(v2, v2);
+            vec3.scale(v2, v2, -1)
+            return [v1, v2]
+        }
+
+        function project(point, ref){
+            // creates a projected vector from point to a 2d plane orthogonal to ref
+            let difference = vec3.create();
+            vec3.subtract(difference, ref, point);
+            c = -vec3.dot(ref,ref) / vec3.dot(difference,ref);
+            let toReturn = vec3.create()
+            vec3.scaleAndAdd(toReturn, ref, difference, c);
+            return toReturn;
+        }
+
+        function canvasProject(point, ref, scale){
+            // creates a 2d vector from the basis components of point onto the 2d plane orthogonal to ref
+            // scale is used for zoom factors
+            scale = scale * (1+(6000-dist)/3000);
+            let projected = project(point, ref);
+            const [refx, refy] = getBasis(ref);
+            const canvasX = width / 2 + vec3.dot(projected, refx) * scale;
+            const canvasY = height - vec3.dot(projected, refy) * scale - 60*Math.sin(phi);
+            return vec2.fromValues(canvasX, canvasY);
+        }
+
+        // L-system Parameters, same as last time
+        const axiom = 'X';
+        const rules = {
+            "X": "F+[[+X-]-F-XF-X][FF][--XF[+X]][F-XX]",
+            "F": "FF",
+        };
+        var iterations = 3;
+        var zangle = 25 * Math.PI / 180;
+        var xyangle = 25 * Math.PI / 180;
+        var theta = 0;
+        var phi = 0;
+        var dist = 4000;
+        var color = [1,255,1];
+        var windspeed = 0;
+        var time = 0;
+
+        function generateLSystemString(axiom, rules, iterations) {
+            let currentString = axiom;
+            for (let i = 0; i < iterations; i++) {
+                let nextString = '';
+                for (let char of currentString) {
+                    if (rules[char]) {
+                        nextString += rules[char];
+                    } else {
+                        nextString += char; 
+                    }
+                }
+                currentString = nextString;
+            }
+            return currentString;
+        }        
+        
+        function drawTree() {
+            ctx.reset();
+            // draw sky
+            ctx.fillStyle = 'rgba(191,255,255,1)';
+            ctx.fillRect(0, 0, width, height);
+            // generates a tree
+            var stack = [];
+            var treeString = generateLSystemString(axiom, rules, iterations);
+            var branchLength = 80/iterations;
+            var i = 0;
+            // draw ground
+            ctx.fillStyle = 'rgba(148,61,0,1)';
+            const horizonHeight = 200*Math.sin(phi);
+            ctx.fillRect(0, height-horizonHeight, width, height);
+
+            // eye position
+            let ref = vec3.fromValues(Math.cos(theta)*Math.cos(phi)*dist, Math.sin(theta)*Math.cos(phi)*dist,Math.sin(phi)*dist);
+            let start = vec3.fromValues(0,0,0);
+            let end = vec3.fromValues(0,0,0.5);
+
+            // we keep track of position and transform stack
+            let treeT = mat4.create();
+            let v1 = vec3.create();
+            let v2 = vec3.create();
+            let rot = rotationMatrixXY(xyangle);
+
+            //branch
+            ctx.lineWidth = 3*(1+(6000-dist)/3000);;
+            ctx.strokeStyle = 'rgba(40,17,17,1)'
+            for (let char of treeString) {
+                switch (char) {
+                    case 'F': 
+                        //draw a line
+                        vec3.transformMat4(v1,start,treeT);
+                        vec3.transformMat4(v2,end,treeT);
+                        let s = canvasProject(v1, ref, branchLength);
+                        let e = canvasProject(v2, ref, branchLength);
+                        ctx.beginPath();
+                        ctx.moveTo(s[0], s[1]);
+                        ctx.lineTo(e[0], e[1]);
+                        ctx.stroke();
+                        //translate treeT
+                        mat4.translate(treeT, treeT, end);
+                        break;
+                    case '+':
+                        //rotate up
+                        let rotp = rotationMatrixZ(zangle);
+                        mat4.multiply(treeT, treeT, rot);
+                        mat4.multiply(treeT, treeT, rotp);
+                        break;
+                    case '-':
+                        //rotate down
+                        let rotm = rotationMatrixZ(-zangle);
+                        //apply to treeT
+                        mat4.multiply(treeT, treeT, rot);
+                        mat4.multiply(treeT, treeT, rotm);
+                        break;
+                    case '[':
+                        stack.push(mat4.clone(treeT));
+                        break;
+                    case ']':
+                        i++;
+                        // draw ball
+                        if(i%2==0){
+                            vec3.transformMat4(v1,start,treeT);
+                            let center = canvasProject(v1, ref, branchLength);
+                            ctx.beginPath();
+                            ctx.arc(center[0],center[1],10*(1+(6000-dist)/3000),0,2*Math.PI,false);
+                            const [r, g, b] = color;
+                            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${0.5})`;
+                            ctx.fill();
+                        }
+                        // restore
+                        treeT = stack.pop();
+                        break;
+                }
+            }
+        }
+
+        const Depth = document.getElementById("Depth");
+        const Spread = document.getElementById("Spread");
+        const Spread2 = document.getElementById("Spread2");
+        Depth.oninput = function() {
+            iterations = parseInt(Depth.value);
+            drawTree();
+        } 
+        Spread.oninput = function() {
+            zangle = (parseFloat(Spread.value)/1000 * 20 + 15) * Math.PI/180;
+            drawTree();
+        }
+        Spread2.oninput = function() {
+            xyangle = (parseFloat(Spread2.value)/1000 * 20 + 15) * Math.PI/180;
+            drawTree();
+        }
+        const Theta = document.getElementById("Theta");
+        Theta.oninput = function() {
+            theta = parseFloat(Theta.value)/1000 * Math.PI * 2;
+            drawTree();
+        }
+        const Phi = document.getElementById("Phi");
+        Phi.oninput = function() {
+            phi = parseFloat(Phi.value)/1000 * Math.PI / 3;
+            drawTree();
+        }
+        const Dist = document.getElementById("Dist");
+        Dist.oninput = function() {
+            dist = 3 * parseFloat(Dist.value) + 3000;
+            console.log(dist);
+            drawTree();
+        }
+        const Red = document.getElementById("Red");
+        const Green = document.getElementById("Green");
+        const Blue = document.getElementById("Blue");
+        for (let item of [Red, Green, Blue]){
+            item.oninput = function() {
+                color = [parseInt(Red.value), parseInt(Green.value), parseInt(Blue.value)];
+                drawTree();
+            }
+        }
+        drawTree();
+    </script>
+</body>
+</html>

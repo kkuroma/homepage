@@ -76,10 +76,11 @@
     <div class="container">
         <h1>バッドアップル</h1>
         <p>
-            Bad apple, made using cubic hermite curves 
+            Bad apple, made using precomputed cubic hermite curves
+            <br>Tap the canvas to pause/play, use the seeker to move
         </p>
         <div class="slider-container"></div>
-        <canvas id="canvas" width="480" height="360"></canvas>
+        <canvas id="canvas" width="2880" height="2160"></canvas>
         <div class="container2">
             <div class="slider-container">
                 <input class="sliders" type="range" min="0" max="6572" value="0" class="slider" id="Time">
@@ -163,7 +164,7 @@
                     var C = function(t) {return Cubic(Hermite,P,t);};
                     for(let t=0; t<100; t++){
                         var res = C(t/100);
-                        ctx.lineTo(res[0],res[1]);
+                        ctx.lineTo(res[0]*6,res[1]*6);
                     }
                 }
                 ctx.closePath();

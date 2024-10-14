@@ -20,6 +20,7 @@
             flex-direction: row;
             align-items: center;
             justify-content: center;
+            width: 480px;
         }
 
         canvas {
@@ -41,7 +42,6 @@
         }
 
         input[type="range"] {
-            width: 480px;
             accent-color: #333;
         }
 
@@ -77,13 +77,26 @@
         <h1>バッドアップル</h1>
         <p>
             Bad apple, made using precomputed cubic hermite curves
-            <br>Tap the canvas to pause/play, use the seeker to move
+            <br>-><strong>C1-continuity</strong> enforced (might look polygon-y because of small tangents)
+            <br>-><strong>Tap the canvas</strong> to pause/play, use the seeker to move
+            <br>-><strong>Smooth factor</strong> controls how smooth the outline appears
+            <br>-><strong>Rainbow intensity</strong> controls the outline flash
         </p>
         <div class="slider-container"></div>
         <canvas id="canvas" width="2880" height="2160"></canvas>
         <div class="container2">
             <div class="slider-container">
-                <input class="sliders" type="range" min="0" max="6572" value="0" class="slider" id="Time">
+                <input style="width:480px;" class="sliders" type="range" min="0" max="6572" value="0" class="slider" id="Time">
+            </div>
+        </div>
+        <div class="container2">
+            <div class="slider-container">
+                <label for="Smooth">Smooth Factor</label>
+                <input class="sliders" type="range" min="0" max="50" value="0" class="slider" id="Smooth">
+            </div>
+            <div class="slider-container">
+                <label for="Rainbow">Rainbow Intensity</label>
+                <input class="sliders" type="range" min="0" max="10" value="0" class="slider" id="Rainbow">
             </div>
         </div>
     </div>
@@ -98,11 +111,22 @@
         ctx.fillRect(0, 0, width, height);
         const num_frames = 6572;
         var isPlaying = false;
-        
+        const rainbowColors = [
+            'rgba(255, 0, 0, 1)',
+            'rgba(255, 127, 0, 1)',
+            'rgba(255, 255, 0, 1)',
+            'rgba(0, 255, 0, 1)',
+            'rgba(0, 0, 255, 1)',
+            'rgba(75, 0, 130, 1)',
+            'rgba(148, 0, 211, 1)'
+        ];
+        var rainbow = 0;
         const audioPlayer = document.getElementById('audioPlayer');
+        var smooth = 0;
 
         // helper functions
         function drawPause(){
+            ctx.shadowBlur = 0;
             var bheight = height / 5;
             var bwidth = width / 30;
             ctx.fillStyle = 'rgba(150,150,150,1)';
@@ -110,6 +134,7 @@
             ctx.fillRect(width/2+1*bwidth, height/2-bheight/2, bwidth, bheight);
         }
         function drawPlay(){
+            ctx.shadowBlur = 0;
             var bsize = height / 5;
             ctx.fillStyle = 'rgba(150,150,150,1)';
             ctx.beginPath();
@@ -147,25 +172,43 @@
                 ctx.fillRect(0, 0, width, height);
                 ctx.fillStyle="rgba(255,255,255,1)";
             }
-            
+            var j = 0;
             for (const contour of contours) {
+                if(rainbow>0&&j<10){
+                    ctx.shadowColor = rainbowColors[parseInt((n+j)/(11-rainbow))%7];
+                    ctx.shadowBlur = 200;
+                } else {
+                    ctx.shadowBlur = 0;
+                }
+                j += 1;
                 const num_contours = contour.length;
-                ctx.beginPath();
+                var lines = [];
                 for (let i=0; i<num_contours; i++) {
                     // generate segment with p1 p2 m1 p2
                     var [x, y, vx, vy] = contour[i];
                     var scale = Math.sqrt(vx*vx+vy*vy); vx = vx/scale; vy = vy/scale;
-                    const p1 = [parseInt(x),parseInt(y)]; const m1 = [vx, vy];
+                    const p1 = [parseInt(x),parseInt(y)]; var m1 = [vx, vy];
                     var [x, y, vx, vy] = contour[(i+1)%num_contours];
                     var scale = Math.sqrt(vx*vx+vy*vy); vx = vx/scale; vy = vy/scale;
-                    const p2 = [parseInt(x),parseInt(y)]; const m2 = [vx, vy];
+                    const p2 = [parseInt(x),parseInt(y)]; var m2 = [vx, vy];
                     const P = [p1,m1,p2,m2];
                     // draw hermite curve
                     var C = function(t) {return Cubic(Hermite,P,t);};
                     for(let t=0; t<100; t++){
                         var res = C(t/100);
-                        ctx.lineTo(res[0]*6,res[1]*6);
+                        lines.push(res);
                     }
+                }
+                ctx.beginPath();
+                for(let i=0; i<lines.length; i++){
+                    var x = 0;
+                    var y = 0;
+                    for(let j=-smooth;j<smooth+1;j++){
+                        var curr = lines[(i+j+lines.length)%lines.length];
+                        x += curr[0]*6;
+                        y += curr[1]*6;
+                    }
+                    ctx.lineTo(x/(2*smooth+1),y/(2*smooth+1));
                 }
                 ctx.closePath();
                 ctx.fill();
@@ -193,6 +236,22 @@
                 drawPause();
             }
             audioPlayer.currentTime = (n / num_frames) * audioPlayer.duration;
+        }
+        const Rainbow = document.getElementById("Rainbow");
+        Rainbow.oninput = function() {
+            rainbow = parseInt(Rainbow.value);
+            if(!isPlaying){
+                draw();
+                drawPause();
+            }
+        }
+        const Smooth = document.getElementById("Smooth");
+        Smooth.oninput = function() {
+            smooth = parseInt(Smooth.value);
+            if(!isPlaying){
+                draw();
+                drawPause();
+            }
         }
         canvas.addEventListener('click', (event) => {
             isPlaying = !isPlaying;

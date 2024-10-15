@@ -102,6 +102,7 @@
     </div>
     <script type="text/javascript" src="gl-matrix-min.js"></script>
     <script type="text/javascript" src="frames.js"></script>
+    <script type="text/javascript" src="apple.js"></script>
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -141,16 +142,43 @@
             ctx.lineTo(width/2-bsize/2,height/2-bsize/2);
             ctx.lineTo(width/2-bsize/2,height/2+bsize/2);
             ctx.lineTo(width/2+bsize/2,height/2);
+            ctx.closePath();
+            ctx.fill();
+        }
+        function drawApple(){
+            ctx.shadowBlur = 0;
+            const numSegments = apple.length;
+            const c = 10000;
+            var segments = [];
+            ctx.fillStyle = 'rgba(150,150,150,1)';
+            const segment_index = parseInt(((num_frames-n-1)/num_frames)*numSegments*100);
+            ctx.beginPath();
+            for(let i=0; i<numSegments; i++){
+                var [x, y, vx, vy] = apple[i];
+                p1 = [x,y]; m1 = [vx/c, vy/c];
+                var [x, y, vx, vy] = apple[(i+1)%numSegments];
+                p2 = [x,y]; m2 = [vx/c, vy/c];
+                const P = [p1,m1,p2,m2];
+                var C = function(t) {return Cubic(Hermite,P,t);}
+                for(let t=0; t<100; t++){
+                    var res = C(t/100);
+                    ctx.lineTo(res[0], res[1]);
+                    if(i==parseInt(segment_index/100)&&t==segment_index%100){
+                        ctx.arc(res[0],res[1],50,0,2*Math.PI,false);
+                    }
+                }
+            }
+            ctx.closePath();
             ctx.fill();
         }
 
         // hermite curve functions
         const Hermite = function(t) {
             return [
-            2*t*t*t-3*t*t+1,
-            t*t*t-2*t*t+t,
-            -2*t*t*t+3*t*t,
-            t*t*t-t*t
+                2*t*t*t-3*t*t+1,
+                t*t*t-2*t*t+t,
+                -2*t*t*t+3*t*t,
+                t*t*t-t*t
             ];
         }
         function Cubic(basis,P,t){
@@ -220,14 +248,14 @@
 
         var n = 0;
         function draw(){
-            var color = mydata[n].w;
-            var contours = mydata[n].c;
+            var color = framesData[n].w;
+            var contours = framesData[n].c;
             ctx.reset();
             drawContours(contours, color);
         }
 
         // load percomputed curve data
-        var mydata = JSON.parse(frames);
+        var framesData = JSON.parse(frames);
         const TimeSlider = document.getElementById("Time");
         TimeSlider.oninput = function() {
             n = parseInt(TimeSlider.value);
@@ -250,6 +278,7 @@
             smooth = parseInt(Smooth.value);
             if(!isPlaying){
                 draw();
+                drawApple();
                 drawPause();
             }
         }
@@ -257,9 +286,11 @@
             isPlaying = !isPlaying;
             if(!isPlaying){
                 drawPause();
+                drawApple();
                 audioPlayer.pause();
             } else {
                 draw();
+                drawApple();
                 drawPlay();
                 audioPlayer.play();
             }
@@ -271,11 +302,11 @@
                 n = parseInt(audioPlayer.currentTime * num_frames / audioPlayer.duration);
                 TimeSlider.value = n;
             }
+            drawApple();
             setTimeout(animate, 1000/60);
         }
         drawPause();
         animate();
-        
     </script>
 </body>
 </html>

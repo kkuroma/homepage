@@ -81,6 +81,7 @@
             <br>-><strong>Tap the canvas</strong> to pause/play, use the seeker to move
             <br>-><strong>Smooth factor</strong> controls how smooth the outline appears
             <br>-><strong>Rainbow intensity</strong> controls the outline flash
+            <br>-><strong>The apple</strong> tells you how much of the video is left
         </p>
         <div class="slider-container"></div>
         <canvas id="canvas" width="2880" height="2160"></canvas>
@@ -145,29 +146,60 @@
             ctx.closePath();
             ctx.fill();
         }
+
+        var apple_seg = [];
+        const c = 10000;
+        const num_apple_seg = apple.length;
+        for(let i=0; i<num_apple_seg; i++){
+            var [x, y, vx, vy] = apple[i];
+            p1 = [x,y]; m1 = [vx/c, vy/c];
+            var [x, y, vx, vy] = apple[(i+1)%num_apple_seg];
+            p2 = [x,y]; m2 = [vx/c, vy/c];
+            const P = [p1,m1,p2,m2];
+            var C = function(t) {return Cubic(Hermite,P,t);}
+            apple_seg.push(C);
+        }
+
+        function applePath(t){
+            segment_index = parseInt(t*num_apple_seg*100);
+            var i = parseInt(segment_index/100);
+            var t = segment_index%100;
+            var res = apple_seg[i](t/100);
+            return res;
+        }
+
         function drawApple(){
             ctx.shadowBlur = 0;
-            const numSegments = apple.length;
-            const c = 10000;
             var segments = [];
-            ctx.fillStyle = 'rgba(150,150,150,1)';
-            const segment_index = parseInt(((num_frames-n-1)/num_frames)*numSegments*100);
+            ctx.fillStyle = 'rgba(255,165,165,1)';
+            // draw apple
             ctx.beginPath();
-            for(let i=0; i<numSegments; i++){
-                var [x, y, vx, vy] = apple[i];
-                p1 = [x,y]; m1 = [vx/c, vy/c];
-                var [x, y, vx, vy] = apple[(i+1)%numSegments];
-                p2 = [x,y]; m2 = [vx/c, vy/c];
-                const P = [p1,m1,p2,m2];
-                var C = function(t) {return Cubic(Hermite,P,t);}
-                for(let t=0; t<100; t++){
-                    var res = C(t/100);
-                    ctx.lineTo(res[0], res[1]);
-                    if(i==parseInt(segment_index/100)&&t==segment_index%100){
-                        ctx.arc(res[0],res[1],50,0,2*Math.PI,false);
-                    }
-                }
+            for(let i=0; i<10000; i++){
+                var res = applePath(i/10000);
+                ctx.lineTo(res[0], res[1]);
             }
+            ctx.closePath();
+            ctx.fill();
+            // draw shade
+            const segment_index = ((num_frames-n-1)/num_frames);
+            ctx.fillStyle = 'rgba(150,0,0,1)';
+            ctx.beginPath();
+            ctx.moveTo(306, 306);
+            for(let i=0; i<10000; i++){
+                if(i/10000>segment_index){
+                    break;
+                }
+                var res = applePath(i/10000);
+                ctx.lineTo(res[0], res[1]);
+            }
+            ctx.lineTo(306, 306);
+            ctx.closePath();
+            ctx.fill();
+            // draw dot
+            var ball = applePath(segment_index);
+            ctx.fillStyle = 'rgba(89,0,89,1)';
+            ctx.beginPath();
+            ctx.arc(ball[0], ball[1], 25, 0, Math.PI*2);
             ctx.closePath();
             ctx.fill();
         }
@@ -248,8 +280,13 @@
 
         var n = 0;
         function draw(){
-            var color = framesData[n].w;
-            var contours = framesData[n].c;
+            try {
+                var color = framesData[n].w;
+                var contours = framesData[n].c;
+            } catch {
+                var color = framesData[0].w;
+                var contours = framesData[0].c;
+            }
             ctx.reset();
             drawContours(contours, color);
         }

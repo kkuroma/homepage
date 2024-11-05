@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+    <title>MazeGame</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 120vh;
+        }
+
+        canvas {
+            border: 1px solid #000;
+            margin-bottom: 20px;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sliders {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            width: 150px;
+        }
+
+        label {
+            font-family: 'Roboto', sans-serif;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        h1 {
+            font-family: 'Roboto', sans-serif;
+            font-size: 30px;
+            color: #333;
+        }
+
+        button {
+            font-family: 'Roboto', sans-serif;
+            font-size: 18px;
+            color: #333;
+            gap: 10px;
+        }
+
+        .container2 {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+        }
+
+        p {
+            font-family: 'Roboto', sans-serif;
+            font-size: 20px;
+            color: #5e5e5e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>The "Infinite" Maze Game</h1>
+        <p>
+            Try to win with the least number of moves!
+            <br>Use W-A-S-D to control your position
+            <br>Use your mouse to control the camera
+            <br>Mazes are generated at random
+        </p>
+        <canvas id="canvas" width="800" height="600"></canvas>
+        <p id="status">Maze Size: 15, Current Level: 1/10, Total Moves: 0</p>
+        <div class="container2">
+            <div class="slider-container">
+                <label for="Z" id="ZL">Zoom Factor</label>
+                <input class="sliders" type="range" min="0" max="1000" value="0" class="slider" id="Zoom">
+            </div>
+            <div class="slider-container">
+                <label for="Size" id="SizeL">Maze Size = 15</label>
+                <input class="sliders" type="range" min="5" max="31" value="15" class="slider" id="Size">
+            </div>
+            <div class="slider-container">
+                <label for="Levels" id="LevelsL">Number of Levels = 10</label>
+                <input class="sliders" type="range" min="1" max="100" value="10" class="slider" id="Levels">
+            </div>
+        </div>
+        <button type="button" id="reset">Restart and Generate New Levels</button> 
+    </div>
+    <script type="text/javascript" src="gl-matrix-min.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        var theta = Math.PI/6;
+        var phi = Math.PI/3;
+        const r = 30;
+        const s = 10;
+        var victory = false;
+
+        // sliders
+
+        const z_slider = document.getElementById("Zoom");
+        var zoom = 1 + (parseFloat(z_slider.value))/200;
+        z_slider.oninput = function() {zoom = 1 + (parseFloat(z_slider.value))/200;}
+
+        const sizeSlider = document.getElementById("Size");
+        const levelSlider = document.getElementById("Levels");
+
+        const sizeLabel = document.getElementById("SizeL");
+        const levelLabel = document.getElementById("LevelsL");
+
+        var size = parseInt(sizeSlider.value);
+        var current_level = 1;
+        var num_levels = parseInt(levelSlider.value);
+
+        const statusLabel = document.getElementById("status");
+
+        sizeSlider.addEventListener("input", () => {
+            sizeLabel.textContent = `Maze Size = ${sizeSlider.value}`;
+        });
+
+        levelSlider.addEventListener("input", () => {
+            levelLabel.textContent = `Number of Levels = ${levelSlider.value}`;
+        });
+
+        // maze functions
+
+        class Cell {
+            constructor(position, id) {
+                this.position = position;
+                this.neighbors = [null, null, null, null];
+                this.id = id;
+                this.vertices = [[-s,s,0],[s,s,0],[s,-s,0],[-s,-s,0]];
+                this.sides = [[0,1],[1,2],[2,3],[3,0]];
+                this.x = Math.floor(id/size);
+                this.y = id%size;
+            }
+            addNeighbor(other, index) {
+                this.neighbors[index] = other;
+                other.neighbors[(index+2)%4] = this;
+            }
+            removeNeighbor(index){
+                this.neighbors[index].neighbors[(index+2)%4] = null;
+                this.neighbors[index] = null;
+            }
+            draw(Tx, alpha){
+                ctx.save();
+                translateTx(this.position, Tx);
+                // set color and draw face
+                switch (this.x + this.y) {
+                    case 0:
+                        ctx.fillStyle = `rgba(99, 66, 245, ${alpha})`;
+                        ctx.beginPath();
+                        for(let i=0; i<4; i++){
+                            var side = this.sides[i];
+                            lineToTx(this.vertices[side[1]],Tx);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+                    case 2 * (size -1):
+                        ctx.fillStyle = `rgba(245, 66, 96, ${alpha})`;
+                        ctx.beginPath();
+                        for(let i=0; i<4; i++){
+                            var side = this.sides[i];
+                            lineToTx(this.vertices[side[1]],Tx);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+                    default:
+                        break;
+                }
+                // draw side
+                ctx.strokeStyle = `rgba(0, 0, 0, ${alpha})`;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                for(let i=0; i<4; i++){
+                    if(this.neighbors[i]==null){
+                        var side = this.sides[i];
+                        moveToTx(this.vertices[side[0]],Tx);
+                        lineToTx(this.vertices[side[1]],Tx);
+                    }
+                }
+                ctx.closePath();
+                ctx.stroke();
+                // restore
+                ctx.restore();
+            }
+        }
+
+        function getRandomNeighbor(i, j) {
+            const possibleNeighbors = [];
+            if (j < size - 1) possibleNeighbors.push([i,j+1,0]);
+            if (i < size - 1) possibleNeighbors.push([i+1,j,1]);
+            if (j > 0) possibleNeighbors.push([i,j-1,2]);
+            if (i > 0) possibleNeighbors.push([i-1,j,3]);
+            const randomIndex = Math.floor(Math.random() * possibleNeighbors.length);
+            return possibleNeighbors[randomIndex];
+        }
+
+        function getRandomMaze(size, z) {
+            // initialize maze
+            var nodes = {};
+            const visited = new Set();
+            const unvisited = new Set();
+            for(let i=0; i<size; i++){
+                for (let j=0; j<size; j++){
+                    nodes[i*size+j] = new Cell([(i-((size-1)/2))*s*2,(j-((size-1)/2))*s*2,z], i*size+j);
+                    unvisited.add(i*size+j);
+                }
+            }
+            // using random walk, generate a maze
+            // loop erase random walk algorithm (generates an MST given a graph)
+            const startIndex = Math.floor(Math.random() * size * size);
+            visited.add(startIndex);
+            unvisited.delete(startIndex);
+
+            while (unvisited.size > 0) {
+                let path = [];
+                let directions = []
+                const unvisitedArray = Array.from(unvisited);
+                let currentIndex = unvisitedArray[Math.floor(Math.random() * unvisitedArray.length)];
+                path.push(currentIndex);
+                while (!visited.has(currentIndex)) {
+                    const i = Math.floor(currentIndex / size);
+                    const j = currentIndex % size;
+                    const [ni, nj, direction] = getRandomNeighbor(i, j, size);
+                    const neighborIndex = ni * size + nj;
+                    const loopIndex = path.indexOf(neighborIndex);
+                    if (loopIndex !== -1) {
+                        path = path.slice(0, loopIndex + 1);
+                        directions = directions.slice(0, loopIndex);
+                    }
+                    else {
+                        path.push(neighborIndex);
+                        directions.push(direction);
+                    }
+                    currentIndex = neighborIndex;
+                }
+                for (let i=0; i<path.length-1; i++){
+                    let curr = path[i];
+                    let next = path[i+1];
+                    let direction = directions[i];
+                    unvisited.delete(curr);
+                    visited.add(curr);
+                    nodes[curr].addNeighbor(nodes[next], direction);
+                }
+            } 
+            return nodes;
+        }
+
+        class Maze {
+            constructor(size, z){
+                this.size = size;
+                this.z = z;
+                this.maze = getRandomMaze(size, z);
+            }
+            draw(Tx, alpha){
+                ctx.save();
+                ctx.fillStyle = `rgba(239, 218, 245, ${alpha})`;
+                let min = (0-((size-1)/2))*s*2 - s;
+                let max = (size-1-((size-1)/2))*s*2 + s;
+                let vertices = [[min, min, this.z], [min, max, this.z], [max, max, this.z], [max, min, this.z]];
+                ctx.beginPath();
+                for (let vertex of vertices){
+                    lineToTx(vertex,Tx);
+                }
+                ctx.closePath();
+                ctx.fill();
+                for(let i=0; i<size; i++){
+                    for (let j=0; j<size; j++){
+                        this.maze[i*size+j].draw(Tx, alpha);
+                    }
+                }
+                ctx.restore();
+            }
+            updatez(newz){
+                for(let i=0; i<size; i++){
+                    for (let j=0; j<size; j++){
+                        this.maze[i*size+j].position[2] = newz
+                    }
+                }
+                this.z = newz;
+            }
+            optimalSol(){
+                let startCell = this.maze[0];
+                let targetId = size*size-1;
+                if (startCell.id === targetId) return 0;
+                const queue = [{ cell: startCell, distance: 0 }];
+                const visited = new Set();
+                visited.add(startCell.id);
+                while (queue.length > 0) {
+                    const { cell, distance } = queue.shift();
+                    for (let neighbor of cell.neighbors) {
+                        if (neighbor && !visited.has(neighbor.id)) {
+                            if (neighbor.id === targetId) {
+                                return distance + 1;
+                            }
+                            queue.push({ cell: neighbor, distance: distance + 1});
+                            visited.add(neighbor.id);
+                        }
+                    }
+                }
+                return -1;
+            }
+        }
+
+        // draw cube
+
+        function getFaceCenter(face, vertices){
+            let x = 0;
+            let y = 0;
+            let z = 0;
+            for (let i=0; i<4; i++) {
+                let vertex = vertices[face[i]];
+                x += vertex[0];
+                y += vertex[1];
+                z += vertex[2];
+            }
+            return vec3.fromValues(x/4,y/4,z/4);
+        }
+
+        function sortFacesDescending(faces, vertices, eye) {
+            return faces.map(item => ({ item, value: vec3.distance(getFaceCenter(item, vertices), eye) }))
+                    .sort((a, b) => a.value - b.value)
+                    .map(obj => obj.item);
+        }
+
+        function shiftVertices(vertices, shiftx, shifty){
+            let output = [];
+            for (let i=0; i<vertices.length; i++){
+                let [x,y,z] = vertices[i];
+                output.push([x+shiftx,y+shifty,z]);
+            }
+            return output;
+        }
+
+        function rotateVertices(vertices, angle, direction, positon){
+            if (direction===null){
+                return vertices;
+            }
+            var transform = mat4.create();
+            let shiftx = 0;
+            let shifty = 0;
+            let shiftz = s*Math.sin(angle+Math.PI/4)*Math.sqrt(2)-s;
+            switch (direction) {
+                case 0:
+                    shiftx = s*Math.cos(angle+Math.PI/4)*Math.sqrt(2)-s;
+                    mat4.translate(transform, transform, vec3.fromValues(-shiftx, 0, -shiftz));
+                    mat4.rotateY(transform, transform, -angle);
+                    break;
+                case 1:
+                    shifty = s*Math.cos(angle+Math.PI/4)*Math.sqrt(2)-s;
+                    mat4.translate(transform, transform, vec3.fromValues(0, -shifty, -shiftz));
+                    mat4.rotateX(transform, transform, angle);
+                    break;
+                case 2:
+                    shiftx = s*Math.cos(angle+Math.PI/4)*Math.sqrt(2)-s;
+                    mat4.translate(transform, transform, vec3.fromValues(shiftx, 0, -shiftz));
+                    mat4.rotateY(transform, transform, angle);
+                    break;
+                case 3:
+                    shifty = s*Math.cos(angle+Math.PI/4)*Math.sqrt(2)-s;
+                    mat4.translate(transform, transform, vec3.fromValues(0, shifty, -shiftz));
+                    mat4.rotateX(transform, transform, -angle);
+                    break;
+                default:
+                    break;
+            }
+            let output = [];
+            for (let i=0; i<vertices.length; i++){
+                let [x,y,z] = vertices[i];
+                let vec = vec3.fromValues(x,y,z);
+                vec3.transformMat4(vec,vec,transform);
+                output.push([vec[0], vec[1], vec[2]]);
+            }
+            return output;
+        }
+
+        class Cube{
+            constructor(position, tileid){
+                this.target = null;
+                this.t = 0;
+                this.moveTime = 15;
+                this.tileid = tileid;
+                this.position = position;
+                this.vertices = [
+                    [-s,s,s],
+                    [s,s,s],
+                    [s,-s,s],
+                    [-s,-s,s],
+                    [-s,s,-s],
+                    [s,s,-s],
+                    [s,-s,-s],
+                    [-s,-s,-s]
+                ];
+                this.faces = [
+                    [0, 1, 5, 4, 255, 0, 0],       // Red
+                    [1, 2, 6, 5, 255, 165, 0],     // Orange
+                    [2, 3, 7, 6, 255, 255, 0],     // Yellow
+                    [3, 0, 4, 7, 0, 128, 0],       // Green
+                    [0, 1, 2, 3, 0, 0, 255],       // Blue
+                    [4, 5, 6, 7, 128, 0, 128]      // Purple
+                ];
+                this.nummoves = 0;
+            }
+            draw(Tx, eye){
+                let vertices = rotateVertices(this.vertices, Math.PI/2 * (this.t/this.moveTime), this.target);
+                ctx.save();
+                translateTx(this.position, Tx);
+                let alpha = 1;
+                let faces_sorted = sortFacesDescending(this.faces, vertices, eye);
+                for (let i=0; i<faces_sorted.length; i++) {
+                    let face = faces_sorted[i];
+                    ctx.fillStyle = `rgba(${face[4]}, ${face[5]}, ${face[6]}, ${alpha})`;
+                    // face
+                    ctx.beginPath();
+                    for (let j=0; j<4; j++){
+                        lineToTx(vertices[face[j]],Tx);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    // outline
+                    ctx.strokeStyle = `rgba(0, 0, 0, ${alpha})`;
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    for (let j=0; j<4; j++){
+                        moveToTx(vertices[face[j]],Tx);
+                        lineToTx(vertices[face[(j+1)%4]],Tx);
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+                ctx.restore();
+                if(this.target!==null){
+                    this.t += 1;
+                }
+                if(this.t==this.moveTime){
+                    this.t = 0;
+                    this.nummoves += 1;
+                    this.vertices = rotateVertices(this.vertices, Math.PI/2, this.target);
+                    let [px, py, pz] = this.position;
+                    switch (this.target) {
+                        case 0:
+                            this.position = [px+2*s, py, pz];
+                            this.vertices = shiftVertices(this.vertices, -2*s, 0, 0);
+                            break;
+                        case 1:
+                            this.position = [px, py+2*s, pz];
+                            this.vertices = shiftVertices(this.vertices, 0, -2*s, 0);
+                            break;
+                        case 2:
+                            this.position = [px-2*s, py, pz];
+                            this.vertices = shiftVertices(this.vertices, +2*s, 0, 0);
+                            break;
+                        case 3:
+                            this.position = [px, py-2*s, pz];
+                            this.vertices = shiftVertices(this.vertices, 0, +2*s, 0);
+                            break;
+                        default:
+                            break;
+                    }
+                    this.target = null;
+                }
+            }
+        }
+
+        // 3d funcs
+
+        function translateTx(loc,Tx) {
+            var locvec = vec3.fromValues(loc[0],loc[1],loc[2]);
+            var res=vec3.create();
+            vec3.transformMat4(res,loc,Tx);
+            ctx.translate(res[0],res[1]);
+        }
+
+        function moveToTx(loc,Tx) {
+            var locvec = vec3.fromValues(loc[0],loc[1],loc[2]);
+            var res=vec3.create();
+            vec3.transformMat4(res,loc,Tx);
+            ctx.moveTo(res[0],res[1]);
+        }
+
+	    function lineToTx(loc,Tx) {
+            var locvec = vec3.fromValues(loc[0],loc[1],loc[2]);
+            var res=vec3.create();
+            vec3.transformMat4(res,loc,Tx);
+            ctx.lineTo(res[0],res[1]);
+        }
+
+        function polar2cartesian(r, theta, phi) {
+            const x = r * Math.cos(theta) * Math.cos(phi);
+            const y = r * Math.sin(theta) * Math.cos(phi);
+            const z = r * Math.sin(phi);
+            return vec3.fromValues(x,y,z);
+        }
+
+        function projectMatrix(eyeCamera) {
+            var targetCamera = vec3.fromValues(0,0,0);
+            var upCamera = vec3.fromValues(0,0,100);
+            var lookAt = mat4.create();
+            mat4.lookAt(lookAt, eyeCamera, targetCamera, upCamera);
+            var proj = mat4.create();
+            mat4.perspective(proj,Math.PI/4,1,1,1);
+            var composed = mat4.create();
+            mat4.multiply(composed,proj,composed);
+            return lookAt;
+        }
+
+        // draw and handle beating maze
+        let wint = 0;
+        let winduration = 120;
+        var maze = new Maze(size, s);
+        var optimal_sol = maze.optimalSol();
+        var nextmaze = new Maze(size, s*15);
+        let [sx, sy, sz] = maze.maze[0].position;
+        var cube = new Cube([sx, sy, sz-s], 0);
+
+        function movecube(t, t_max){
+            let min = (0-((size-1)/2))*s*2;
+            let max = (size-1-((size-1)/2))*s*2;
+            return [min*t/t_max+max*(1-t/t_max), min*t/t_max+max*(1-t/t_max), -10*s*Math.sin(Math.PI*t/t_max)];
+        }
+
+        function draw() {
+            ctx.reset();
+            ctx.fillStyle = 'rgba(191,255,255,1)';
+            ctx.fillRect(0, 0, width, height);
+            ctx.translate(width/2, height/2);
+            if (current_level>num_levels && !(victory)){
+                victory = true;
+                optimal_sol -= maze.optimalSol();
+            }
+            if (victory) {
+                ctx.fillStyle = 'rgba(0,0,0,1)';
+                ctx.font = "50px Roboto";
+                ctx.fillText("Congratulations, you win!",-280,-100);
+                ctx.font = "30px Roboto";
+                ctx.fillText(`You used a total of ${cube.nummoves} moves`,-200,-30);
+                ctx.fillText(`(with optimally ${optimal_sol} moves)`,-190,30);
+            } else {
+                ctx.scale(zoom,zoom);
+                eye = polar2cartesian(r, theta, phi);
+                composed = projectMatrix(eye);
+                if((cube.tileid==size*size-1)&&(cube.target==null)){
+                    nextmaze.updatez(s*(15-14*wint/winduration));
+                    maze.updatez(s*(1-14*wint/winduration));
+                    nextmaze.draw(composed, wint/winduration)
+                    maze.draw(composed, 1-wint/winduration);
+                    cube.position = movecube(wint, winduration);
+                    cube.draw(composed, eye);
+                    wint += 1;
+                    if (wint == winduration) {
+                        maze = nextmaze;
+                        optimal_sol += maze.optimalSol();
+                        [sx, sy, sz] = maze.maze[0].position;
+                        cube.position = [(0-((size-1)/2))*s*2, (0-((size-1)/2))*s*2, 0];
+                        maze.updatez(s);
+                        cube.tileid = 0;
+                        wint = 0;
+                        nextmaze = new Maze(size, s*15);
+                        current_level += 1;
+                    }
+                } else {
+                    maze.draw(composed, 1);
+                    cube.draw(composed, eye);
+                }
+                statusLabel.textContent = `Maze Size: ${size}, Current Level: ${current_level}/${num_levels}, Total Moves: ${cube.nummoves}`;
+            }
+            setTimeout(draw, 1000/60);
+        }
+
+        const button = document.getElementById("reset");
+        button.onclick = function() {
+            size = parseInt(sizeSlider.value);
+            current_level = 1;
+            num_levels = parseInt(levelSlider.value);
+            wint = 0;
+            maze = new Maze(size, s);
+            optimal_sol = maze.optimalSol();
+            nextmaze = new Maze(size, s*15);
+            [sx, sy, sz] = maze.maze[0].position;
+            cube = new Cube([sx, sy, sz-s], 0);
+            victory = false;
+        }
+
+        // mouse drag script
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        canvas.addEventListener('mousedown', (event) => {
+            isDragging = true;
+            lastMouseX = event.clientX;
+            lastMouseY = event.clientY;
+        });
+
+        canvas.addEventListener('mouseup', (event) => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            if (isDragging) {
+                const sensitivity = 0.01;
+                const deltaX = event.clientX - lastMouseX;
+                const deltaY = event.clientY - lastMouseY;
+                theta += deltaX * sensitivity;
+                theta = theta % (Math.PI*2)
+                phi += deltaY * sensitivity;
+                phi = Math.min(Math.max(phi, Math.PI / 12), Math.PI / 2);
+                lastMouseX = event.clientX;
+                lastMouseY = event.clientY;
+            }
+        });
+
+        // key press
+        document.addEventListener('keydown', function(event) {
+            let target = null;
+            if ((event.key === 'w' || event.key === 'W')&&(cube.target===null)&&(wint==0)) {
+                target = 0
+            }
+            if ((event.key === 's' || event.key === 'S')&&(cube.target===null)&&(wint==0)) {
+                target = 2;
+            }
+            if ((event.key === 'a' || event.key === 'A')&&(cube.target===null)&&(wint==0)) {
+                target = 3;
+            }
+            if ((event.key === 'd' || event.key === 'D')&&(cube.target===null)&&(wint==0)) {
+                target = 1;
+            }
+            let targetmap = {
+                0 : 1,
+                1 : 0,
+                2 : 3,
+                3 : 2,
+            }
+            if (target!=null){
+                if(maze.maze[cube.tileid].neighbors[targetmap[target]]!=null){
+                    cube.tileid = maze.maze[cube.tileid].neighbors[targetmap[target]].id;
+                    cube.target = target;
+                }
+            }
+        });
+
+        // call draw recursively
+        draw();
+
+    </script>
+</body>
+</html>

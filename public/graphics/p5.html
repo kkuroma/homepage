@@ -101,11 +101,12 @@
         const ctx = canvas.getContext('2d');
         const width = canvas.width;
         const height = canvas.height;
-        var theta = Math.PI/6;
-        var phi = Math.PI/3;
+        var theta = -Math.PI/6;
+        var phi = Math.PI/4;
         const r = 30;
         const s = 10;
         var victory = false;
+        let controlbuffer = [];
 
         // sliders
 
@@ -265,6 +266,7 @@
                 this.size = size;
                 this.z = z;
                 this.maze = getRandomMaze(size, z);
+                this.optimal = null;
             }
             draw(Tx, alpha){
                 ctx.save();
@@ -294,6 +296,9 @@
                 this.z = newz;
             }
             optimalSol(){
+                if(this.optimal!=null){
+                    return this.optimal;
+                }
                 let startCell = this.maze[0];
                 let targetId = size*size-1;
                 if (startCell.id === targetId) return 0;
@@ -305,6 +310,7 @@
                     for (let neighbor of cell.neighbors) {
                         if (neighbor && !visited.has(neighbor.id)) {
                             if (neighbor.id === targetId) {
+                                this.optimal = distance + 1;
                                 return distance + 1;
                             }
                             queue.push({ cell: neighbor, distance: distance + 1});
@@ -392,7 +398,7 @@
             constructor(position, tileid){
                 this.target = null;
                 this.t = 0;
-                this.moveTime = 15;
+                this.moveTime = 12;
                 this.tileid = tileid;
                 this.position = position;
                 this.vertices = [
@@ -520,7 +526,7 @@
 
         // draw and handle beating maze
         let wint = 0;
-        let winduration = 120;
+        let winduration = 60;
         var maze = new Maze(size, s);
         var optimal_sol = maze.optimalSol();
         var nextmaze = new Maze(size, s*15);
@@ -534,6 +540,16 @@
         }
 
         function draw() {
+            // handle instructions
+            if((cube.target===null)&&(wint==0)&&(controlbuffer.length>0)){
+                let target = controlbuffer.shift();
+                let targetmap = {0 : 1, 1 : 0, 2 : 3, 3 : 2,}
+                if(maze.maze[cube.tileid].neighbors[targetmap[target]]!=null){
+                    cube.tileid = maze.maze[cube.tileid].neighbors[targetmap[target]].id;
+                    cube.target = target;
+                }
+            }
+
             ctx.reset();
             ctx.fillStyle = 'rgba(191,255,255,1)';
             ctx.fillRect(0, 0, width, height);
@@ -548,7 +564,7 @@
                 ctx.fillText("Congratulations, you win!",-280,-100);
                 ctx.font = "30px Roboto";
                 ctx.fillText(`You used a total of ${cube.nummoves} moves`,-200,-30);
-                ctx.fillText(`(with optimally ${optimal_sol} moves)`,-190,30);
+                ctx.fillText(`(optimally, you'll need ${optimal_sol} moves)`,-220,30);
             } else {
                 ctx.scale(zoom,zoom);
                 eye = polar2cartesian(r, theta, phi);
@@ -576,7 +592,7 @@
                     maze.draw(composed, 1);
                     cube.draw(composed, eye);
                 }
-                statusLabel.textContent = `Maze Size: ${size}, Current Level: ${current_level}/${num_levels}, Total Moves: ${cube.nummoves}`;
+                statusLabel.textContent = `Maze Size: ${size}, Levels Beaten: ${current_level-1}/${num_levels}, Total Moves: ${cube.nummoves}`;
             }
             setTimeout(draw, 1000/60);
         }
@@ -611,7 +627,7 @@
         });
 
         canvas.addEventListener('mousemove', (event) => {
-            if (isDragging) {
+            if (isDragging && (!victory)) {
                 const sensitivity = 0.01;
                 const deltaX = event.clientX - lastMouseX;
                 const deltaY = event.clientY - lastMouseY;
@@ -627,30 +643,19 @@
         // key press
         document.addEventListener('keydown', function(event) {
             let target = null;
-            if ((event.key === 'w' || event.key === 'W')&&(cube.target===null)&&(wint==0)) {
+            if ((event.key === 'w' || event.key === 'W')) {
                 target = 0
             }
-            if ((event.key === 's' || event.key === 'S')&&(cube.target===null)&&(wint==0)) {
+            if ((event.key === 's' || event.key === 'S')) {
                 target = 2;
             }
-            if ((event.key === 'a' || event.key === 'A')&&(cube.target===null)&&(wint==0)) {
+            if ((event.key === 'a' || event.key === 'A')) {
                 target = 3;
             }
-            if ((event.key === 'd' || event.key === 'D')&&(cube.target===null)&&(wint==0)) {
+            if ((event.key === 'd' || event.key === 'D')) {
                 target = 1;
             }
-            let targetmap = {
-                0 : 1,
-                1 : 0,
-                2 : 3,
-                3 : 2,
-            }
-            if (target!=null){
-                if(maze.maze[cube.tileid].neighbors[targetmap[target]]!=null){
-                    cube.tileid = maze.maze[cube.tileid].neighbors[targetmap[target]].id;
-                    cube.target = target;
-                }
-            }
+            controlbuffer.push(target);
         });
 
         // call draw recursively

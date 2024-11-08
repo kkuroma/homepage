@@ -72,9 +72,9 @@
     <div class="container">
         <h1>The "Infinite" Maze Game</h1>
         <p>
-            Try to win with the least number of moves!
-            <br>Use W-A-S-D to control your position
-            <br>Use your mouse to control the camera
+            Try to win with the least number of moves or the highest score!
+            <br>Gems give you a score of n for a maze of size n x n
+            <br>Use W-A-S-D to control your position and your mouse to control the camera
             <br>Mazes are generated at random
         </p>
         <canvas id="canvas" width="800" height="600"></canvas>
@@ -103,8 +103,9 @@
         const height = canvas.height;
         var theta = -Math.PI/6;
         var phi = Math.PI/4;
-        const r = 30;
+        const r = 1000;
         const s = 10;
+        var score = 0;
         var victory = false;
         let controlbuffer = [];
 
@@ -270,7 +271,7 @@
             }
             draw(Tx, alpha){
                 ctx.save();
-                ctx.fillStyle = `rgba(239, 218, 245, ${alpha})`;
+                ctx.fillStyle = `rgba(175, 159, 252, ${alpha})`;
                 let min = (0-((size-1)/2))*s*2 - s;
                 let max = (size-1-((size-1)/2))*s*2 + s;
                 let vertices = [[min, min, this.z], [min, max, this.z], [max, max, this.z], [max, min, this.z]];
@@ -328,13 +329,13 @@
             let x = 0;
             let y = 0;
             let z = 0;
-            for (let i=0; i<4; i++) {
+            for (let i=0; i<face.length-3; i++) {
                 let vertex = vertices[face[i]];
                 x += vertex[0];
                 y += vertex[1];
                 z += vertex[2];
             }
-            return vec3.fromValues(x/4,y/4,z/4);
+            return vec3.fromValues(x/(face.length-3),y/(face.length-3),z/(face.length-3));
         }
 
         function sortFacesDescending(faces, vertices, eye) {
@@ -375,7 +376,7 @@
                     shiftx = s*Math.cos(angle+Math.PI/4)*Math.sqrt(2)-s;
                     mat4.translate(transform, transform, vec3.fromValues(shiftx, 0, -shiftz));
                     mat4.rotateY(transform, transform, angle);
-                    break;
+                    break; 
                 case 3:
                     shifty = s*Math.cos(angle+Math.PI/4)*Math.sqrt(2)-s;
                     mat4.translate(transform, transform, vec3.fromValues(0, shifty, -shiftz));
@@ -392,6 +393,81 @@
                 output.push([vec[0], vec[1], vec[2]]);
             }
             return output;
+        }
+
+        class Gem{
+            constructor(position){
+                this.position = position;
+                this.t = 0;
+                this.exist = true;
+                this.alpha = 1;
+                this.fade = false;
+                this.collide = true;
+            }
+            draw(Tx, eye){
+                this.t += 1;
+                this.t = this.t%60;
+                if(this.fade){
+                    this.alpha -= 1/60;
+                    let [x,y,z] = this.position;
+                    this.position = [x,y,z-s/30];
+                    if(this.alpha<0){
+                        this.exist = false;
+                    }
+                }
+                if(this.exist){
+                    let angle = this.t/120 * Math.PI * 2;
+                    let vertices = [
+                        [0,0,-2*s],
+                        [0,0,s],
+                        [Math.sin(angle)*s, Math.cos(angle)*s, -s/2],
+                        [Math.sin(angle+Math.PI/2)*s, Math.cos(angle+Math.PI/2)*s, -s/2],
+                        [Math.sin(angle+Math.PI)*s, Math.cos(angle+Math.PI)*s, -s/2],
+                        [Math.sin(angle+Math.PI*3/2)*s, Math.cos(angle+Math.PI*3/2)*s, -s/2],
+                    ];
+                    let faces = [
+                        [0,2,3,0,87,87],
+                        [0,3,4,0,180,180],
+                        [0,4,5,0,87,87],
+                        [0,5,2,0,180,180],
+                        [1,2,3,0,180,180],
+                        [1,3,4,0,87,87],
+                        [1,4,5,0,180,180],
+                        [1,5,2,0,87,87],
+                    ]
+                    ctx.save();
+                    translateTx(this.position, Tx);
+                    let faces_sorted = sortFacesDescending(faces, vertices, eye);
+                    for (let i=0; i<faces_sorted.length; i++) {
+                        let face = faces_sorted[i];
+                        ctx.fillStyle = `rgba(${face[3]}, ${face[4]}, ${face[5]}, ${this.alpha})`;
+                        // face
+                        ctx.beginPath();
+                        for (let j=0; j<4; j++){
+                            lineToTx(vertices[face[j]],Tx);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                }
+            }
+        }
+
+        function getRandomGems(size, maze){
+            const dict = {};
+            const selectedNumbers = new Set();
+
+            while (selectedNumbers.size < size/2) {
+                const randomNum = Math.floor(Math.random() * (size*size-2)) + 1;
+                selectedNumbers.add(randomNum);
+            }
+            selectedNumbers.forEach(num => {
+                let [sx, sy, sz] = maze.maze[num].position;
+                dict[num] = new Gem([sx, sy, sz-s]);
+            });
+
+            return dict;
         }
 
         class Cube{
@@ -532,6 +608,18 @@
         var nextmaze = new Maze(size, s*15);
         let [sx, sy, sz] = maze.maze[0].position;
         var cube = new Cube([sx, sy, sz-s], 0);
+        var gems = getRandomGems(size, maze);
+
+        function dist(vec1, vec2){
+            // lazy dist function that only cares bout x and y coords
+            let x1 = vec1[0];
+            let y1 = vec1[0];
+            let z1 = 0;
+            let x2 = vec2[0];
+            let y2 = vec2[0];
+            let z2 = 0;
+            return Math.sqrt((x1-x2)**2+(y1-y2)**2+(z1-z2)**2)
+        }
 
         function movecube(t, t_max){
             let min = (0-((size-1)/2))*s*2;
@@ -551,7 +639,7 @@
             }
 
             ctx.reset();
-            ctx.fillStyle = 'rgba(191,255,255,1)';
+            ctx.fillStyle = 'rgba(253,247,186,1)';
             ctx.fillRect(0, 0, width, height);
             ctx.translate(width/2, height/2);
             if (current_level>num_levels && !(victory)){
@@ -565,11 +653,19 @@
                 ctx.font = "30px Roboto";
                 ctx.fillText(`You used a total of ${cube.nummoves} moves`,-200,-30);
                 ctx.fillText(`(optimally, you'll need ${optimal_sol} moves)`,-220,30);
+                ctx.fillText(`Collected gem scores = ${score}`,-170,90);
             } else {
                 ctx.scale(zoom,zoom);
                 eye = polar2cartesian(r, theta, phi);
                 composed = projectMatrix(eye);
                 if((cube.tileid==size*size-1)&&(cube.target==null)){
+                    for (const key in gems) {
+                        if(gems[key].collide){
+                            gems[key].collide = false;
+                            gems[key].fade = true;
+                        }
+                        gems[key].draw(composed, eye);
+                    }
                     nextmaze.updatez(s*(15-14*wint/winduration));
                     maze.updatez(s*(1-14*wint/winduration));
                     nextmaze.draw(composed, wint/winduration)
@@ -587,12 +683,25 @@
                         wint = 0;
                         nextmaze = new Maze(size, s*15);
                         current_level += 1;
+                        gems = getRandomGems(size, maze);
                     }
                 } else {
                     maze.draw(composed, 1);
-                    cube.draw(composed, eye);
+                    for (const key in gems) {
+                        if(gems[key].collide&&(key==cube.tileid)){
+                            gems[key].collide = false;
+                            gems[key].fade = true;
+                            score += size;
+                        }
+                    }
+                    const obj_array = Object.values(gems);
+                    obj_array.push(cube);
+                    obj_array.sort((a, b) => dist(a.position, eye) - dist(b.position, eye));
+                    for (let obj of obj_array){
+                        obj.draw(composed, eye);
+                    }
                 }
-                statusLabel.textContent = `Maze Size: ${size}, Levels Beaten: ${current_level-1}/${num_levels}, Total Moves: ${cube.nummoves}`;
+                statusLabel.textContent = `Maze Size: ${size}, Levels Beaten: ${current_level-1}/${num_levels}, Total Moves: ${cube.nummoves}, Score: ${score}`;
             }
             setTimeout(draw, 1000/60);
         }
@@ -609,6 +718,8 @@
             [sx, sy, sz] = maze.maze[0].position;
             cube = new Cube([sx, sy, sz-s], 0);
             victory = false;
+            score = 0;
+            gems = getRandomGems(size, maze);
         }
 
         // mouse drag script

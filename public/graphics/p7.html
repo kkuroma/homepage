@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+    <title>N-body problem</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 180vh;
+        }
+
+        canvas {
+            border: 1px solid #000;
+            margin-bottom: 20px;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sliders {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            width: 200px;
+        }
+
+        label {
+            font-family: 'Roboto', sans-serif;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        h1 {
+            font-family: 'Roboto', sans-serif;
+            font-size: 30px;
+            color: #333;
+        }
+
+        button {
+            font-family: 'Roboto', sans-serif;
+            font-size: 18px;
+            color: #333;
+            margin: 20px;
+        }
+
+        .container2 {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+        }
+
+        p {
+            font-family: 'Roboto', sans-serif;
+            font-size: 20px;
+            color: #5e5e5e;
+        }
+
+        #rainbowButton {
+            position: relative;
+            width: 60px;
+            height: 20px;
+            padding: 20px 40px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 30px;
+            background-color: black;
+            color: white;
+            overflow: hidden;
+            transition: background-color 0.3s ease;
+        }
+
+        #rainbowButton.rainbow {
+            animation: rainbowEffect 2s infinite;
+        }
+
+        @keyframes rainbowEffect {
+            0% { background-color: #b20000; }
+            14% { background-color: #cc6600; }
+            28% { background-color: #cccc00; }
+            42% { background-color: #009900; } 
+            57% { background-color: #0000b2; }
+            71% { background-color: #3a0066; }
+            85% { background-color: #6a1a99; }
+            100% { background-color: #b20000; }
+        }
+
+        #rainbowButton.active {
+            background-color: black;
+        }
+
+        #movingCircle {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            width: 30px;
+            height: 30px;
+            background-color: white;
+            border-radius: 50%;
+            transform: translateY(-50%);
+            transition: left 0.5s ease-in-out;
+        }
+
+        select {
+            font-family: 'Roboto', sans-serif;
+            padding: 10px;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+    <script type="text/javascript" src="gl-matrix-min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>Lore accurate N-body Problem</h1>
+    <p>
+        <strong>Lava shader via 3-Dimensional perlin noise and random radial distortion.</strong>
+        <br>> The light source is fixed in the world space
+        <br>> The camera is controlled by mouse grab-and-drag
+        <br>> Object rotation speed and color is controlled by sliders
+        <br><strong>N-body gravitational simulator via Newtonian physics</strong>
+        <br>> "Stars" are initialized with random position, velocity, and mass
+        <br>> Out-of-bounds or collided stars are sent to random position
+    </p>
+    <canvas id="glCanvas" width="800" height="800"></canvas> 
+    <div class="container2">
+        <select id="obj3dSelector">
+            <option value="sphere">Sphere</option>
+            <option value="icosahedron">Icosahedron</option>
+            <option value="cube">Cube</option>
+        </select>
+    </div>
+    <div class="container2">
+        <div class="slider-container">
+            <label for="XSpeed" id="XSpeedL">X Rotation Speed = 0</label>
+            <input class="sliders" type="range" min="0" max="1000" value="550" class="slider" id="XSpeed">
+        </div>
+        <div class="slider-container">
+            <label for="YSpeed" id="YSpeedL">Y Rotation Speed = 1</label>
+            <input class="sliders" type="range" min="0" max="1000" value="600" class="slider" id="YSpeed">
+        </div>
+        <div class="slider-container">
+            <label for="ZSpeed" id="ZSpeedL">Z Rotation Speed = 0</label>
+            <input class="sliders" type="range" min="0" max="1000" value="450" class="slider" id="ZSpeed">
+        </div>
+    </div>
+    <div class="container2">
+        <div class="slider-container">
+            <label for="Red" id="RedL">Red = 100</label>
+            <input class="sliders" type="range" min="0" max="255" value="255" class="slider" id="Red">
+        </div>
+        <div class="slider-container">
+            <label for="Green" id="GreenL">Green = 100</label>
+            <input class="sliders" type="range" min="0" max="255" value="25" class="slider" id="Green">
+        </div>
+        <div class="slider-container">
+            <label for="Blue" id="BlueL">Blue = 100</label>
+            <input class="sliders" type="range" min="0" max="255" value="3" class="slider" id="Blue">
+        </div>
+    </div>
+    <div class="container2">
+        <button id="rainbowButton">
+            <span id="movingCircle"></span>
+        </button>
+        <p><strong>Toggle Rainbow Mode</strong></p>
+    </div>
+    <div class="container2">
+        <div class="slider-container">
+            <label for="N" id="NL">Number of stars = 15</label>
+            <input class="sliders" type="range" min="1" max="15" value="12" class="slider" id="N">
+        </div>
+        <button type="button" id="reset">Re-run simulation</button> 
+    </div>
+</div>
+
+<!-- Vertex Shader -->
+<script id="vertexShader" type="x-shader/x-vertex">
+    precision highp float;
+
+    // Inputs from javascript
+    attribute vec3 vPosition;
+    attribute vec3 vNormal;
+    attribute vec2 vUV;
+    attribute vec2 vTexCoords;
+
+    // Uniforms
+    uniform mat4 uMVPMatrix;
+    uniform mat4 uMMatrix;
+    uniform mat3 uMnMatrix;
+    uniform mat4 uMVMatrix;
+    uniform mat3 uMVNormalMatrix;
+
+    // Outputs to fragment shader
+    varying vec3 fNormal;
+    varying vec3 fPosition;
+    varying vec3 fWorldCoord;
+    varying vec2 fUV;
+    varying vec2 fTexCoords;
+
+    void main() {
+        fNormal = normalize(uMnMatrix*vNormal);
+        vec4 worldPosition = uMMatrix * vec4(vPosition, 1.0);
+        fPosition = worldPosition.xyz;
+        gl_Position = uMVPMatrix * vec4(vPosition, 1.0);
+        fWorldCoord = vPosition;
+        fUV = vUV;
+        fTexCoords = vTexCoords;
+    }
+</script>
+
+<!-- Fragment Shader -->
+<script id="fragmentShader" type="x-shader/x-fragment">
+
+    precision highp float;
+
+    // Input from vertex shader
+    varying vec3 fNormal;
+    varying vec3 fPosition;
+    varying vec3 fWorldCoord;
+    varying vec2 fUV;
+    varying vec2 fTexCoords;
+
+    // Uniforms
+    uniform vec3 uObjectColor;
+    uniform float time;
+    uniform float rainbow;
+    uniform float ridge;
+    uniform vec2 uResolution;
+    uniform vec3 uCenter;
+    uniform vec3 uCamera;
+    uniform mat4 uMVPMatrix;
+    uniform mat4 uMMatrix;
+    uniform mat3 uMnMatrix;
+    uniform mat4 uMVMatrix;
+    uniform mat3 uMVNormalMatrix;
+
+    // constants
+    #define DIFFUSE_INTENSITY 1.0
+    #define SPECULAR_INTENSITY 0.5
+    #define SHININESS 32.0
+    #define AMBIENT_INTENSITY 0.2
+
+    // Blinn-Phong lighting
+    vec3 blinnPhong(
+        vec3 viewDir,
+        vec3 lightDir,
+        vec3 lightColor,
+        vec3 normal,
+        vec3 objColor
+    ) {
+        // Diffuse
+        float diffuseFactor = max(dot(normal, lightDir), 0.0);
+        vec3 diffuse = DIFFUSE_INTENSITY * diffuseFactor * lightColor * objColor;
+        
+        // Specular
+        vec3 halfDir = normalize(lightDir + viewDir);  // Halfway vector
+        float specularFactor = pow(max(dot(normal, halfDir), 0.0), SHININESS);
+        vec3 specular = SPECULAR_INTENSITY * specularFactor * lightColor;
+
+        // Combine
+        vec3 finalColor = diffuse + specular;
+
+        return finalColor;
+    }
+
+    // Twirl function
+    vec3 twirl(vec3 P, vec3 up, vec3 axis, float time, float twistAmount, float spiralCount) {
+        vec3 rely = normalize(axis);
+        vec3 relx = normalize(cross(normalize(up), rely));
+        vec3 relz = normalize(cross(relx, rely));
+        vec3 relpos = normalize(vec3(dot(P, relx), dot(P, rely), dot(P, relz)));
+
+        float r = length(relpos);
+        float theta = atan(relpos.z, relpos.x);
+        float phi = acos(relpos.y / r);
+
+        theta += twistAmount * sin(phi * spiralCount + time);
+        float twistx = r * sin(phi) * cos(theta);
+        float twisty = r * cos(phi);
+        float twistz = r * sin(phi) * sin(theta);
+
+        return twistx+relx + twisty+rely + twistz+relz;
+    }    
+
+    // Classic Perlin 3D Noise by Stefan Gustavson
+    vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
+    vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+    vec3 fade(vec3 t) {return t*t*t*(t*(t*6.0-15.0)+10.0);}
+    float noise(vec3 P){
+        vec3 Pi0 = floor(P); // Integer part for indexing
+        vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1
+        Pi0 = mod(Pi0, 289.0);
+        Pi1 = mod(Pi1, 289.0);
+        vec3 Pf0 = fract(P); // Fractional part for interpolation
+        vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
+        vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+        vec4 iy = vec4(Pi0.yy, Pi1.yy);
+        vec4 iz0 = Pi0.zzzz;
+        vec4 iz1 = Pi1.zzzz;
+        
+        vec4 ixy = permute(permute(ix) + iy);
+        vec4 ixy0 = permute(ixy + iz0);
+        vec4 ixy1 = permute(ixy + iz1);
+        
+        vec4 gx0 = ixy0 / 7.0;
+        vec4 gy0 = fract(floor(gx0) / 7.0) - 0.5;
+        gx0 = fract(gx0);
+        vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
+        vec4 sz0 = step(gz0, vec4(0.0));
+        gx0 -= sz0 * (step(0.0, gx0) - 0.5);
+        gy0 -= sz0 * (step(0.0, gy0) - 0.5);
+        
+        vec4 gx1 = ixy1 / 7.0;
+        vec4 gy1 = fract(floor(gx1) / 7.0) - 0.5;
+        gx1 = fract(gx1);
+        vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
+        vec4 sz1 = step(gz1, vec4(0.0));
+        gx1 -= sz1 * (step(0.0, gx1) - 0.5);
+        gy1 -= sz1 * (step(0.0, gy1) - 0.5);
+        
+        vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
+        vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
+        vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
+        vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
+        vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
+        vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
+        vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
+        vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
+        
+        vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
+        g000 *= norm0.x;
+        g010 *= norm0.y;
+        g100 *= norm0.z;
+        g110 *= norm0.w;
+        vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
+        g001 *= norm1.x;
+        g011 *= norm1.y;
+        g101 *= norm1.z;
+        g111 *= norm1.w;
+        
+        float n000 = dot(g000, Pf0);
+        float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
+        float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
+        float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
+        float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
+        float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
+        float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
+        float n111 = dot(g111, Pf1);
+        
+        vec3 fade_xyz = fade(Pf0);
+        vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
+        vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
+        float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x); 
+        return 2.2 * n_xyz;
+    }
+
+    float ridgeDistance(vec2 texpos) {
+        float left = texpos.x;
+        float right = 1.0 - texpos.x;
+        float bottom = texpos.y;
+        float top = 1.0 - texpos.y;
+        return clamp(min(min(left, right), min(bottom, top)), 0.0, 1.0);
+    }
+
+    void main() {
+        vec3 P = fWorldCoord - uCenter;
+        vec3 up = vec3(0.0, 1.0, 0.0);
+
+        vec3 noiseAxis = vec3(
+            noise(P + time * 0.13 + 13.0),
+            noise(P + time * 0.29 + 29.0),
+            noise(P + time * 0.41 + 41.0)
+        );
+        P = twirl(P, up, noiseAxis, time, 2.0, 2.0);
+
+        float n1 = noise(P * 2.0 + time * 0.1);
+        float n2 = noise(P * 4.0 - time * 0.2);
+        float n3 = noise(P * 8.0 + time * 0.3);
+        float n4 = noise(P * 16.0 - time * 0.4);
+
+        float combinedNoise = n1 * 2.0 + n2 * 1.6 + n3 * 1.2 + n4 * 0.8;
+        combinedNoise = pow(combinedNoise, 1.0 / 8.0) + pow(combinedNoise, 8.0);
+        combinedNoise = max(combinedNoise, 0.2);
+
+        vec3 objColor = uObjectColor;
+        if(rainbow==0.0){
+            objColor = abs(normalize(fWorldCoord));
+        }
+        
+        vec3 baseEmission = clamp(combinedNoise * objColor, 0.0, 1.0);
+
+        // lighting
+        vec3 viewDir = normalize(uCamera);
+        vec3 whiteLight = blinnPhong(
+            viewDir,
+            normalize(vec3(0.0, 1.0, 0.0)),
+            vec3(0.8, 0.8, 0.8),
+            fNormal,
+            baseEmission
+        );
+        vec3 ambient = baseEmission * AMBIENT_INTENSITY;
+        vec3 finalColor = ambient + whiteLight;
+        float dist = ridgeDistance(fUV);
+        if(dist<ridge){
+            finalColor /= 4.0;
+        }
+        gl_FragColor = vec4(finalColor, 1.0);
+    }    
+</script>
+
+<script>
+// gravitational constant
+const G = 6.67430e-11; 
+// camera parameters
+var t = 0;
+var theta = 0;
+var phi = Math.PI/9;
+var r = 15;
+var isDragging = false;
+var lastMouseX = 0;
+var lastMouseY = 0;
+var eyePosition = polar2cartesian(r, theta, phi);
+var num_stars = 10;
+const canvas = document.getElementById('glCanvas');
+const gl = canvas.getContext('webgl');
+
+const slider = document.getElementById('N');
+const label = document.getElementById('NL');
+function updateSliderValue() {
+    num_stars = parseInt(slider.value);
+    label.textContent = `Number of stars = ${num_stars}`;
+}
+updateSliderValue();
+slider.addEventListener('input', updateSliderValue);
+
+canvas.addEventListener('mousedown', (event) => {
+    isDragging = true;
+    lastMouseX = event.clientX;
+    lastMouseY = event.clientY;
+});
+
+canvas.addEventListener('mouseup', (event) => {
+    isDragging = false;
+});
+
+canvas.addEventListener('mousemove', (event) => {
+    if (isDragging) {
+        const sensitivity = 0.01;
+        const deltaX = event.clientX - lastMouseX;
+        const deltaY = event.clientY - lastMouseY;
+        theta += deltaX * sensitivity;
+        theta = theta % (Math.PI*2)
+        phi += deltaY * sensitivity;
+        phi = Math.min(Math.max(phi, -Math.PI/2), Math.PI / 2);
+        lastMouseX = event.clientX;
+        lastMouseY = event.clientY;
+    }
+});
+
+const xSpeedSlider = document.getElementById('XSpeed');
+const ySpeedSlider = document.getElementById('YSpeed');
+const zSpeedSlider = document.getElementById('ZSpeed');
+
+const xSpeedLabel = document.getElementById('XSpeedL');
+const ySpeedLabel = document.getElementById('YSpeedL');
+const zSpeedLabel = document.getElementById('ZSpeedL');
+
+let xspeed = (xSpeedSlider.value - 500) / 100;
+let yspeed = (ySpeedSlider.value - 500) / 100;
+let zspeed = (zSpeedSlider.value - 500) / 100;
+
+function updateSpeed() {
+    xspeed = (xSpeedSlider.value - 500) / 100;
+    yspeed = (ySpeedSlider.value - 500) / 100;
+    zspeed = (zSpeedSlider.value - 500) / 100;
+
+    xSpeedLabel.textContent = `X Rot Speed = ${xspeed.toFixed(2)}`;
+    ySpeedLabel.textContent = `Y Rot Speed = ${yspeed.toFixed(2)}`;
+    zSpeedLabel.textContent = `Z Rot Speed = ${zspeed.toFixed(2)}`;
+}
+
+xSpeedSlider.addEventListener('input', updateSpeed);
+ySpeedSlider.addEventListener('input', updateSpeed);
+zSpeedSlider.addEventListener('input', updateSpeed);
+
+updateSpeed();
+
+const rainbowButton = document.getElementById('rainbowButton');
+const movingCircle = document.getElementById('movingCircle');
+let rainbow = false;
+rainbowButton.addEventListener('click', function() {
+    rainbow = !rainbow;
+    if (rainbow) {
+        rainbowButton.classList.add('rainbow');
+        rainbowButton.classList.remove('active');
+        movingCircle.style.left = 'calc(100% - 40px)';
+    } else {
+        rainbowButton.classList.remove('rainbow');
+        rainbowButton.classList.add('active');
+        movingCircle.style.left = '10px';
+    }
+});
+
+// Get the slider elements and labels
+const redSlider = document.getElementById('Red');
+const greenSlider = document.getElementById('Green');
+const blueSlider = document.getElementById('Blue');
+
+const redLabel = document.getElementById('RedL');
+const greenLabel = document.getElementById('GreenL');
+const blueLabel = document.getElementById('BlueL');
+
+let red = redSlider.value;
+let green = greenSlider.value;
+let blue = blueSlider.value;
+
+function updateColorValues() {
+    red = redSlider.value;
+    green = greenSlider.value;
+    blue = blueSlider.value;
+
+    redLabel.textContent = `Red = ${red}`;
+    greenLabel.textContent = `Green = ${green}`;
+    blueLabel.textContent = `Blue = ${blue}`;
+}
+
+redSlider.addEventListener('input', updateColorValues);
+greenSlider.addEventListener('input', updateColorValues);
+blueSlider.addEventListener('input', updateColorValues);
+
+updateColorValues();
+
+const obj3dSelector = document.getElementById('obj3dSelector');
+
+function polar2cartesian(r, theta, phi) {
+    const x = r * Math.cos(theta) * Math.cos(phi);
+    const y = r * Math.sin(phi);
+    const z = r * Math.sin(theta) * Math.cos(phi);
+    return [x,y,z];
+}
+
+class Cube {
+    constructor(size = 1) {
+        this.size = size;
+        this.radius = size/2;
+    }
+
+    getVertexes() {
+        const half = this.radius;
+
+        const positions = [
+            -half, -half, half,
+            half, -half, half,
+            half, half, half,
+            -half, half, half,
+            -half, -half, -half,
+            -half, half, -half,
+            half, half, -half,
+            half, -half, -half,
+            -half, half, -half,
+            -half, half, half,
+            half, half, half,
+            half, half, -half,
+            -half, -half, -half,
+            half, -half, -half,
+            half, -half, half,
+            -half, -half, half,
+            half, -half, -half,
+            half, half, -half,
+            half, half, half,
+            half, -half, half,
+            -half, -half, -half,
+            -half, -half, half,
+            -half, half, half,
+            -half, half, -half
+        ];
+
+        const normals = [
+            0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
+            0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1,
+            0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
+            0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0,
+            1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0,
+            -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0
+        ];
+
+        const uvs = [
+            0, 0, 1, 0, 1, 1, 0, 1,
+            0, 0, 0, 1, 1, 1, 1, 0,
+            0, 0, 0, 1, 1, 1, 1, 0,
+            0, 0, 1, 0, 1, 1, 0, 1,
+            0, 0, 1, 0, 1, 1, 0, 1,
+            0, 0, 0, 1, 1, 1, 1, 0
+        ];
+
+        const indices = [
+            0, 1, 2, 0, 2, 3,
+            4, 5, 6, 4, 6, 7,
+            8, 9, 10, 8, 10, 11,
+            12, 13, 14, 12, 14, 15,
+            16, 17, 18, 16, 18, 19,
+            20, 21, 22, 20, 22, 23
+        ];
+        const texcoords = [...uvs];
+        return [positions, normals, uvs, indices, texcoords];
+    }
+}
+
+class Icosahedron {
+    constructor(radius = 1) {
+        this.radius = radius*((1 + Math.sqrt(5)) / 2);
+    }
+
+    getVertexes() {
+        const t = this.radius;
+        const r = this.radius/((1 + Math.sqrt(5)) / 2);
+
+        const positions = [
+            -r,  t,  0,   r,  t,  0,  -r, -t,  0,   r, -t,  0,
+             0, -r,  t,   0,  r,  t,   0, -r, -t,   0,  r, -t,
+             t,  0, -r,   t,  0,  r,  -t,  0, -r,  -t,  0,  r,
+        ];
+
+        const indices = [
+            0, 11,  5,  0,  5,  1,  0,  1,  7,  0,  7, 10,  0, 10, 11,
+            1,  5,  9,  5, 11,  4, 11, 10,  2, 10,  7,  6,  7,  1,  8,
+            3,  9,  4,  3,  4,  2,  3,  2,  6,  3,  6,  8,  3,  8,  9,
+            4,  9,  5,  2,  4, 11,  6,  2, 10,  8,  6,  7,  9,  8,  1,
+        ];
+
+        const normals = positions.slice();
+        const uvs = [];
+        for (let i = 0; i < positions.length; i += 3) {
+            const x = positions[i];
+            const y = positions[i + 1];
+            const z = positions[i + 2];
+            const u = 0.5 + Math.atan2(z, x) / (2 * Math.PI);
+            const v = 0.5 - Math.asin(y/Math.sqrt(x**2+y**2+z**2)) / Math.PI;
+            uvs.push(u, v);
+        }
+
+        const texcoords = [];
+        for (let i = 0; i < indices.length; i += 3) {
+            const a = indices[i] * 2;
+            const b = indices[i + 1] * 2;
+            const c = indices[i + 2] * 2;
+            texcoords.push(
+                uvs[a], uvs[a + 1],
+                uvs[b], uvs[b + 1],
+                uvs[c], uvs[c + 1]
+            );
+        }
+
+        return [positions, normals, uvs, indices, texcoords];
+    }
+}
+
+class Sphere {
+    constructor(radius = 1, latBands = 30, longBands = 30) {
+        this.radius = radius;
+        this.latBands = latBands;
+        this.longBands = longBands;
+    }
+
+    getVertexes() {
+        const positions = [];
+        const normals = [];
+        const uvs = [];
+        const indices = [];
+        const texcoords = [];
+
+        for (let lat = 0; lat <= this.latBands; ++lat) {
+            const theta = lat * Math.PI / this.latBands;
+            const sinTheta = Math.sin(theta);
+            const cosTheta = Math.cos(theta);
+
+            for (let lon = 0; lon <= this.longBands; ++lon) {
+                const phi = lon * 2 * Math.PI / this.longBands;
+                const sinPhi = Math.sin(phi);
+                const cosPhi = Math.cos(phi);
+
+                const x = cosPhi * sinTheta;
+                const y = cosTheta;
+                const z = sinPhi * sinTheta;
+
+                positions.push(this.radius * x, this.radius * y, this.radius * z);
+                normals.push(x, y, z);
+
+                const u = lon / this.longBands;
+                const v = 1 - lat / this.latBands;
+                uvs.push(u, v);
+            }
+        }
+
+        for (let lat = 0; lat < this.latBands; ++lat) {
+            for (let lon = 0; lon < this.longBands; ++lon) {
+                const first = (lat * (this.longBands + 1)) + lon;
+                const second = first + this.longBands + 1;
+
+                indices.push(first, second, first + 1);
+                texcoords.push(
+                    uvs[first * 2], uvs[first * 2 + 1],
+                    uvs[second * 2], uvs[second * 2 + 1],
+                    uvs[(first + 1) * 2], uvs[(first + 1) * 2 + 1]
+                );
+
+                indices.push(second, second + 1, first + 1);
+                texcoords.push(
+                    uvs[second * 2], uvs[second * 2 + 1],
+                    uvs[(second + 1) * 2], uvs[(second + 1) * 2 + 1],
+                    uvs[(first + 1) * 2], uvs[(first + 1) * 2 + 1]
+                );
+            }
+        }
+        return [positions, normals, uvs, indices, texcoords];
+    }
+}
+
+class Object3D {
+    constructor(gl, obj, color=[0.7, 0.7, 0.7], mass=0.0, v=0.0) {
+        this.gl = gl;
+        this.obj = obj;
+        this.color = color;
+        this.center = [0, 0, 0];
+        this.rotation = [0, 0, 0];
+        this.ridge = 0.0;
+        this.mass = 0.0;
+        this.v = 0.0;
+        this.radius = obj.radius;
+        this.initBuffers();
+    }
+
+    updateObj(newObj) {
+        this.obj = newObj;
+        this.initBuffers();
+    }
+
+    updatePosition(dt) {
+        let [x,y,z] = this.center;
+        let [vx,vy,vz] = this.v;
+        this.center = [x+vx*dt, y+vy*dt, z+vz*dt];
+    }
+
+    merge(other){
+        let [x1,y1,z1] = this.center;
+        let [vx1,vy1,vz1] = this.v;
+        let [x2,y2,z2] = other.center;
+        let [vx2,vy2,vz2] = other.v;
+        this.center = [(x1+x2)/2, (y1+y2)/2, (z1+z2)/2];
+        this.v = [(vx1+vx2)/2, (vy1+vy2)/2, (vz1+vz2)/2];
+    }
+
+    applyForce(fx, fy, fz, dt) {
+        const ax = fx / this.mass;
+        const ay = fy / this.mass;
+        const az = fz / this.mass;
+        let [vx, vy, vz] = this.v;
+        this.v = [vx+ax*dt, vy+ay*dt, vz+az*dt];
+    }
+
+    distanceTo(other) {
+        let [x1,y1,z1] = this.center;
+        let [x2,y2,z2] = other.center;
+        let dx = x1-x2;
+        let dy = y1-y2;
+        let dz = z1-z2;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    isCollidingWith(other) {
+        const dist = this.distanceTo(other);
+        return dist < (this.radius+other.radius);
+    }
+
+    initBuffers() {
+        let [positions, normals, uvs, indices, texcoords] = this.obj.getVertexes();
+        this.positionBuffer = this.createBuffer(positions);
+        this.normalBuffer = this.createBuffer(normals);
+        this.uvBuffer = this.createBuffer(uvs);
+        this.indexBuffer = this.createBuffer(indices, this.gl.ELEMENT_ARRAY_BUFFER);
+        this.indexCount = indices.length;
+        this.texcoordsBuffer = this.createBuffer(texcoords);
+    }
+
+    createBuffer(data, type = this.gl.ARRAY_BUFFER) {
+        const buffer = this.gl.createBuffer();
+        this.gl.bindBuffer(type, buffer);
+        this.gl.bufferData(type, new (type === this.gl.ELEMENT_ARRAY_BUFFER ? Uint16Array : Float32Array)(data), this.gl.STATIC_DRAW);
+        return buffer;
+    }
+
+    draw(programInfo, eyePosition, target, up, rainbow) {
+        const gl = this.gl;
+
+        // Matrices
+        const tModel = mat4.create(); // Model matrix
+        const tCamera = mat4.create(); // Camera (view) matrix
+        const tProjection = mat4.create(); // Projection matrix
+        const tMV = mat4.create(); // ModelView matrix
+        const tMVn = mat3.create(); // Normal matrix
+        const tMn = mat3.create(); // Normal model matrix
+        const tMVP = mat4.create(); // ModelViewProjection matrix
+
+        // Camera setup
+        mat4.lookAt(tCamera, eyePosition, target, up);
+
+        // Projection matrix
+        mat4.perspective(tProjection, Math.PI / 4, this.gl.canvas.width / this.gl.canvas.height, 0.1, 100.0);
+
+        // Model matrix transformations
+        mat4.translate(tModel, tModel, this.center);
+        mat4.rotateX(tModel, tModel, this.rotation[0]);
+        mat4.rotateY(tModel, tModel, this.rotation[1]);
+        mat4.rotateZ(tModel, tModel, this.rotation[2]);
+
+        // Combine model and view matrices
+        mat4.multiply(tMV, tCamera, tModel);
+        mat3.normalFromMat4(tMVn, tMV);
+        mat4.multiply(tMVP, tProjection, tMV);
+        mat3.normalFromMat4(tMn, tModel);
+
+        // Set shader attributes and uniforms
+        gl.useProgram(programInfo.program);
+
+        this.bindAttribute(gl, programInfo.attribLocations.vPosition, this.positionBuffer, 3);
+        this.bindAttribute(gl, programInfo.attribLocations.vNormal, this.normalBuffer, 3);
+        this.bindAttribute(gl, programInfo.attribLocations.vUV, this.uvBuffer, 2);
+        this.bindAttribute(gl, programInfo.attribLocations.vTexCoords, this.texcoordsBuffer, 2);
+
+        gl.uniformMatrix4fv(programInfo.uniformLocations.uMVMatrix, false, tMV);
+        gl.uniformMatrix3fv(programInfo.uniformLocations.uMVNormalMatrix, false, tMVn);
+        gl.uniformMatrix4fv(programInfo.uniformLocations.uMVPMatrix, false, tMVP);
+        gl.uniformMatrix4fv(programInfo.uniformLocations.uMMatrix, false, tModel);
+        gl.uniformMatrix3fv(programInfo.uniformLocations.uMnMatrix, false, tMn);
+        
+        gl.uniform3fv(programInfo.uniformLocations.uObjectColor, this.color);
+        gl.uniform1f(programInfo.uniformLocations.time, t);
+        const rainbowValue = rainbow ? 0.0 : 1.0;
+        gl.uniform1f(programInfo.uniformLocations.rainbow, rainbowValue);
+        gl.uniform1f(programInfo.uniformLocations.ridge, this.ridge);
+        gl.uniform2fv(programInfo.uniformLocations.uResolution, [this.gl.canvas.width, this.gl.canvas.height]);
+        gl.uniform3fv(programInfo.uniformLocations.uCenter, this.center);
+        gl.uniform3fv(programInfo.uniformLocations.uCamera, eyePosition);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+        gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_SHORT, 0);
+    }
+
+    bindAttribute(gl, location, buffer, numComponents) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.vertexAttribPointer(location, numComponents, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(location);
+    }
+}
+
+// functions for 3 body problem simulation
+function setRandomAttribute(obj, setmass=true) {
+    const mass = Math.random() * 1e12 + 1e11;
+    const x = (Math.random() * 1000 - 500)/100;
+    const y = (Math.random() * 1000 - 500)/100;
+    const z = (Math.random() * 1000 - 500)/100;
+    const vx = Math.random() * 10 - 5;
+    const vy = Math.random() * 10 - 5;
+    const vz = Math.random() * 10 - 5;
+    if(setmass){
+        obj.mass = mass;
+    }
+    obj.center = [x,y,z];
+    obj.v = [vx, vy, vz];
+    return ;
+}
+
+function setZero(obj) {
+    obj.center = [0,0,0];
+    return ;
+}
+
+function setRandomAttributesWithoutCollisions(objects) {
+    for (let i = 0; i < objects.length; i++) {
+        let isColliding = true;
+        let attempts = 0;
+        const maxAttempts = 100;
+        while (isColliding && attempts < maxAttempts) {
+            setRandomAttribute(objects[i]);
+            isColliding = false;
+            for (let j = 0; j < i; j++) {
+                if (objects[i].isCollidingWith(objects[j])) {
+                    isColliding = true;
+                    break;
+                }
+            }
+            attempts++;
+        }
+        if (attempts === maxAttempts) {
+            return;
+        }
+        // first object goes to origin
+        if(i===0){
+            objects[i].center = [0,0,0];
+            objects[i].v = [0,0,0];
+        }
+    }
+}
+
+function simulate(objects, deltaTime) {
+    for (let i = 0; i < objects.length; i++) {
+        for (let j = i + 1; j < objects.length; j++) {
+            const objA = objects[i];
+            const objB = objects[j];
+            if (objA.isCollidingWith(objB)) {
+                const rng = Math.random()
+                const destroyIndex = rng < 0.5 ? i : j;
+                setRandomAttribute(objects[destroyIndex], setmass=false);
+            } else {
+                const dist = objA.distanceTo(objB);
+                const force = (G * objA.mass * objB.mass) / (dist * dist);
+                const fx = force * (objB.center[0] - objA.center[0]) / dist;
+                const fy = force * (objB.center[1] - objA.center[1]) / dist;
+                const fz = force * (objB.center[2] - objA.center[2]) / dist;
+                objA.applyForce(fx, fy, fz, deltaTime);
+                objB.applyForce(-fx, -fy, -fz, deltaTime);
+            }
+        }
+    }
+    for (let obj of objects) {
+        obj.updatePosition(deltaTime);
+        // reset object if out of bounds
+        let [x, y, z] = obj.center;
+        let dist = Math.sqrt(x**2+y**2+z**2);
+        if(dist>10){
+            setRandomAttribute(obj, setmass=false);
+        }
+    }
+}
+
+const button = document.getElementById("reset");
+
+function main() {
+    const canvas = document.getElementById('glCanvas');
+    const gl = canvas.getContext('webgl');
+
+    if (!gl) {
+        console.error('WebGL not supported!');
+        return;
+    }
+
+    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, document.getElementById('vertexShader').textContent);
+    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, document.getElementById('fragmentShader').textContent);
+
+    const program = createProgram(gl, vertexShader, fragmentShader);
+    const programInfo = {
+        program,
+        attribLocations: {
+            vPosition: gl.getAttribLocation(program, 'vPosition'),
+            vNormal: gl.getAttribLocation(program, 'vNormal'),
+            vUV: gl.getAttribLocation(program, 'vUV'),
+            vTexCoords: gl.getAttribLocation(program, 'vTexCoords'),
+        },
+        uniformLocations: {
+            uMVMatrix: gl.getUniformLocation(program, 'uMVMatrix'),
+            uMMatrix: gl.getUniformLocation(program, 'uMMatrix'),
+            uMnMatrix: gl.getUniformLocation(program, 'uMnMatrix'),
+            uMVNormalMatrix: gl.getUniformLocation(program, 'uMVNormalMatrix'),
+            uMVPMatrix: gl.getUniformLocation(program, 'uMVPMatrix'),
+            uObjectColor: gl.getUniformLocation(program, 'uObjectColor'),
+            time: gl.getUniformLocation(program, 'time'),
+            rainbow: gl.getUniformLocation(program, 'rainbow'),
+            ridge: gl.getUniformLocation(program, 'ridge'),
+            uResolution: gl.getUniformLocation(program, 'uResolution'),
+            uCenter: gl.getUniformLocation(program, 'uCenter'),
+            uCamera: gl.getUniformLocation(program, 'uCamera'),
+        },
+    };
+
+    let objects = [];
+    for (let i=0; i<num_stars; i++){
+        objects.push(new Object3D(gl, new Sphere(radius=1, latBands=50, longBands=50)));
+    }
+    setRandomAttributesWithoutCollisions(objects);
+    button.onclick = function() {
+        objects = [];
+        let selectedValue = obj3dSelector.value;
+        switch (selectedValue) {
+            case 'sphere':
+                for (let i=0; i<num_stars; i++){
+                    objects.push(new Object3D(gl, new Sphere(radius=1, latBands=50, longBands=50)));
+                    objects[i].ridge = -0.1;
+                }
+                break;
+            case 'icosahedron':
+                for (let i=0; i<num_stars; i++){
+                    objects.push(new Object3D(gl, new Icosahedron(radius=0.6)));
+                    objects[i].ridge = -0.1;
+                }
+                break;
+            case 'cube':
+                for (let i=0; i<num_stars; i++){
+                    objects.push(new Object3D(gl, new Cube(size=1.6)));
+                    objects[i].ridge = 0.1;
+                }
+                break;
+            default:
+                console.log('Unknown object');
+                break;
+        }
+        setRandomAttributesWithoutCollisions(objects);
+        if(num_stars==1){
+            r = 5;
+        } else {
+            r = 15;
+        }
+    }
+    obj3dSelector.addEventListener('change', (event) => {
+        const selectedValue = event.target.value;
+        switch (selectedValue) {
+            case 'sphere':
+                for (let obj of objects){
+                    obj.updateObj(new Sphere(radius=1, latBands=50, longBands=50));
+                    obj.ridge = -0.1;
+                }
+                break;
+            case 'icosahedron':
+                for (let obj of objects){
+                    obj.updateObj(new Icosahedron(radius=0.6));
+                    obj.ridge = -0.1;
+                }
+                break;
+            case 'cube':
+                for (let obj of objects){
+                    obj.updateObj(new Cube(size=1.6));
+                    obj.ridge = 0.1;
+                }
+                break;
+            default:
+                console.log('Unknown object');
+                break;
+        }
+    });
+
+    // Camera parameters
+    var target = [0, 0, 0];
+    var up = [0, 1, 0];
+    function render() {
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        eyePosition = polar2cartesian(r, theta, phi);
+        for (let obj of objects){
+            let [rotx, roty, rotz] = obj.rotation
+            obj.rotation = [rotx+xspeed/60, roty+yspeed/60, rotz+zspeed/60];
+            obj.color = [red/255, green/255, blue/255];
+            obj.draw(programInfo, eyePosition, target, up, rainbow);
+        }
+        t += 1/60;
+        simulate(objects, 1/60);
+        setTimeout(render, 1000/60);
+    }
+    render();
+}
+
+function loadShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Error compiling shader:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+    }
+
+    return shader;
+}
+
+function createProgram(gl, vertexShader, fragmentShader) {
+    const program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error('Error linking program:', gl.getProgramInfoLog(program));
+        return null;
+    }
+
+    return program;
+}
+
+main();
+</script>
+</body>
+</html>

@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+    <title>🗿 Moyai</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 95vh;
+        }
+
+        canvas {
+            border: 1px solid #000;
+            margin-bottom: 20px;
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sliders {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            width: 200px;
+        }
+
+        label {
+            font-family: 'Roboto', sans-serif;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        h1 {
+            font-family: 'Roboto', sans-serif;
+            font-size: 30px;
+            color: #333;
+        }
+
+        button {
+            font-family: 'Roboto', sans-serif;
+            font-size: 18px;
+            color: #333;
+            margin: 20px;
+        }
+
+        .container2 {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+        }
+
+        p {
+            font-family: 'Roboto', sans-serif;
+            font-size: 20px;
+            color: #5e5e5e;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🗿 Moyai 🗿</h1>
+    <p style="padding-top:0; margin-bottom:0;">Click the screen to move around, click press to return cursor</p>
+    <p style="margin : 0; padding-top:0;">Use W S A D for directional controls, SHIFT to go down, CTRL to go up</p>
+    <canvas id="glCanvas" width="800" height="600"></canvas> 
+</div>
+<script id="vertexShader" type="x-shader/x-vertex">
+    precision highp float;
+
+    // Inputs from javascript
+    attribute vec3 vPosition;
+    attribute vec3 vNormal;
+    attribute vec2 vTexCoords;
+
+    // Output to fragment shader
+    varying vec3 fNormal; // normal in world coords
+    varying vec3 fPosition; // position in object coords
+    varying vec3 fWorldCoord; // position in world coords
+    varying vec2 fTexCoords; // texture coords
+    varying float depth;
+
+    // Uniform transforms
+    uniform mat4 uMVPMatrix;
+    uniform mat4 uMMatrix;
+    uniform mat3 uMnMatrix;
+    uniform mat4 uMVMatrix;
+    uniform mat3 uMVNormalMatrix;
+
+    // Other uniforms
+    uniform sampler2D dirtNormal;
+    uniform sampler2D dirtTexture;
+    uniform sampler2D stoneNormal;
+    uniform sampler2D stoneTexture;
+    uniform sampler2D barkNormal;
+    uniform sampler2D barkTexture;
+    uniform sampler2D blood;
+    uniform float mode; // 0 - floor, 1 - stone, 2 - water, 3 - tree
+
+    void main() {
+        fTexCoords = vTexCoords;
+        fNormal = vNormal;
+        fPosition = vPosition;
+        fWorldCoord = (uMMatrix * vec4(vPosition, 1.0)).xyz;
+        vec3 displacement = vec3(0.0, 0.0, 0.0);
+        if(mode==0.0){
+            vec3 texture = texture2D(dirtNormal,fTexCoords).xyz;
+            float bump = (texture.x + texture.y + texture.z)/3.0-0.5;
+            displacement+=normalize(uMnMatrix*vNormal)*bump/6.0;
+        }
+        gl_Position = uMVPMatrix * vec4(vPosition+displacement, 1.0); // position in camera coords
+        depth = gl_Position.z;
+    }
+</script>
+<script id="fragmentShader" type="x-shader/x-fragment">
+    precision highp float;
+
+    // Input from vertex shader
+    varying vec3 fNormal; // normal in world coords
+    varying vec3 fPosition; // position in object coords
+    varying vec3 fWorldCoord; // position in world coords
+    varying vec2 fTexCoords; // texture coords
+    varying float depth;
+
+    // Uniform transforms
+    uniform mat4 uMVPMatrix;
+    uniform mat4 uMMatrix;
+    uniform mat3 uMnMatrix;
+    uniform mat4 uMVMatrix;
+    uniform mat3 uMVNormalMatrix;
+
+    // Other uniforms
+    uniform vec3 uCenter;
+    uniform vec3 uCamera;
+    uniform vec3 uObjectColor;
+    uniform vec3 uLightColor;
+    uniform vec3 uLightDirection;
+    uniform float time;
+    uniform float mode;
+    
+    // Texture
+    uniform sampler2D dirtNormal;
+    uniform sampler2D dirtTexture;
+    uniform sampler2D stoneNormal;
+    uniform sampler2D stoneTexture;
+    uniform sampler2D blood;
+    uniform sampler2D barkNormal;
+    uniform sampler2D barkTexture;
+
+    // constants
+    #define DIFFUSE_INTENSITY 1.0
+    #define SPECULAR_INTENSITY 0.5
+    #define SHININESS 32.0
+    #define AMBIENT_INTENSITY 0.2
+
+    // Classic Perlin 3D Noise by Stefan Gustavson
+    vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
+    vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+    vec3 fade(vec3 t) {return t*t*t*(t*(t*6.0-15.0)+10.0);}
+    float noise(vec3 P){
+        vec3 Pi0 = floor(P); // Integer part for indexing
+        vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1
+        Pi0 = mod(Pi0, 289.0);
+        Pi1 = mod(Pi1, 289.0);
+        vec3 Pf0 = fract(P); // Fractional part for interpolation
+        vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
+        vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+        vec4 iy = vec4(Pi0.yy, Pi1.yy);
+        vec4 iz0 = Pi0.zzzz;
+        vec4 iz1 = Pi1.zzzz;
+        
+        vec4 ixy = permute(permute(ix) + iy);
+        vec4 ixy0 = permute(ixy + iz0);
+        vec4 ixy1 = permute(ixy + iz1);
+        
+        vec4 gx0 = ixy0 / 7.0;
+        vec4 gy0 = fract(floor(gx0) / 7.0) - 0.5;
+        gx0 = fract(gx0);
+        vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
+        vec4 sz0 = step(gz0, vec4(0.0));
+        gx0 -= sz0 * (step(0.0, gx0) - 0.5);
+        gy0 -= sz0 * (step(0.0, gy0) - 0.5);
+        
+        vec4 gx1 = ixy1 / 7.0;
+        vec4 gy1 = fract(floor(gx1) / 7.0) - 0.5;
+        gx1 = fract(gx1);
+        vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
+        vec4 sz1 = step(gz1, vec4(0.0));
+        gx1 -= sz1 * (step(0.0, gx1) - 0.5);
+        gy1 -= sz1 * (step(0.0, gy1) - 0.5);
+        
+        vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
+        vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
+        vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
+        vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
+        vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
+        vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
+        vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
+        vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
+        
+        vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
+        g000 *= norm0.x;
+        g010 *= norm0.y;
+        g100 *= norm0.z;
+        g110 *= norm0.w;
+        vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
+        g001 *= norm1.x;
+        g011 *= norm1.y;
+        g101 *= norm1.z;
+        g111 *= norm1.w;
+        
+        float n000 = dot(g000, Pf0);
+        float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
+        float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
+        float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
+        float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
+        float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
+        float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
+        float n111 = dot(g111, Pf1);
+        
+        vec3 fade_xyz = fade(Pf0);
+        vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
+        vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
+        float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x); 
+        return 2.2 * n_xyz;
+    }
+
+    // Twirl function
+    vec3 twirl(vec3 P, vec3 up, vec3 axis, float time, float twistAmount, float spiralCount) {
+        vec3 rely = normalize(axis);
+        vec3 relx = normalize(cross(normalize(up), rely));
+        vec3 relz = normalize(cross(relx, rely));
+        vec3 relpos = normalize(vec3(dot(P, relx), dot(P, rely), dot(P, relz)));
+
+        float r = length(relpos);
+        float theta = atan(relpos.z, relpos.x);
+        float phi = acos(relpos.y / r);
+
+        theta += twistAmount * sin(phi * spiralCount + time);
+        float twistx = r * sin(phi) * cos(theta);
+        float twisty = r * cos(phi);
+        float twistz = r * sin(phi) * sin(theta);
+
+        return twistx+relx + twisty+rely + twistz+relz;
+    }  
+
+    // Blinn-Phong lighting
+    vec3 blinnPhong(
+        vec3 viewDir,
+        vec3 lightDir,
+        vec3 lightColor,
+        vec3 normal,
+        vec3 objColor
+    ) {
+        // Diffuse
+        float diffuseFactor = max(dot(normal, lightDir), 0.0);
+        vec3 diffuse = DIFFUSE_INTENSITY * diffuseFactor * lightColor * objColor;
+        
+        // Specular
+        vec3 halfDir = normalize(lightDir + viewDir);  // Halfway vector
+        float specularFactor = pow(max(dot(normal, halfDir), 0.0), SHININESS);
+        vec3 specular = SPECULAR_INTENSITY * specularFactor * lightColor;
+
+        // Combine
+        if(mode==1.0){
+            return diffuse + specular;
+        }
+        return diffuse;
+    }
+
+    void main() {
+        float depth_mult = 1.0;
+        vec3 dNormal;
+        vec3 objColor;
+        float alpha = 1.0;
+        if(mode==0.0){
+            dNormal = texture2D(dirtNormal,fTexCoords).rgb;
+            objColor = texture2D(dirtTexture,fTexCoords).rgb*uObjectColor;
+            depth_mult = min(2.0/pow(depth, 0.5), 1.0);
+        } else if(mode==1.0){
+            dNormal = texture2D(stoneNormal,fTexCoords).rgb;
+            objColor = texture2D(stoneTexture,fTexCoords).rgb*uObjectColor;
+        } else if(mode==2.0){
+            dNormal = vec3(0,0,0);
+            vec3 P = vec3(fTexCoords.x, 0.0, fTexCoords.y)*10.0;
+            vec3 up = vec3(0.0, 1.0, 0.0);
+            vec3 noiseAxis = vec3(
+                noise(P + time * 0.13 + 13.0),
+                noise(P + time * 0.29 + 29.0),
+                noise(P + time * 0.41 + 41.0)
+            );
+            P = clamp(abs(twirl(P, up, noiseAxis, time, 2.0, 2.0)/10.0), 0.0, 1.0);
+            objColor = texture2D(blood,P.xz).rgb*texture2D(blood,fTexCoords).rgb*uObjectColor;
+            alpha = 0.925;
+        } else if(mode==3.0){
+            dNormal = texture2D(barkNormal,fTexCoords).rgb;
+            objColor = texture2D(barkTexture,fTexCoords).rgb*uObjectColor;
+        } else {
+            objColor = uObjectColor;
+            dNormal = vec3(0,0,0);
+        }
+
+        vec3 normal = normalize(dNormal+uMnMatrix*fNormal);
+        vec3 color = blinnPhong(
+            uCamera,
+            uLightDirection,
+            uLightColor,
+            normal,
+            objColor
+        );
+        vec3 finalColor = color*depth_mult;
+        // adding fog, courtesy of my friend bridget
+        float fogFactor = clamp(1.0 - depth * 0.08, 0.0, 1.0);
+        finalColor = mix(vec3(0.5, 0.3, 0.3), finalColor, fogFactor);
+        gl_FragColor = vec4(finalColor, alpha);
+    }
+</script>
+<script src="gl-matrix-min.js"></script>
+<script src="perlin.js"></script>
+<script src="statue.js"></script>
+<script src="base64.js"></script>
+<script src="geometry.js"></script>
+<script src="deadtree.js"></script>
+<script>
+// Main Javascript code
+const canvas = document.getElementById('glCanvas');
+const gl = canvas.getContext('webgl');
+
+let time = 0;
+let theta = -3.83;
+let phi = -0.1;
+let xpos = 4.78;
+let zpos = -4.27;
+let ypos = 1.0;
+let speed = 5;
+let eyePosition = [xpos, ypos, zpos];
+let lightColor = [1,1,1];
+const lightDirection = [0,1,0];
+const up = [0,1,0];
+const sensitivity = 0.0005;
+
+function polar2cartesian(theta, phi) {
+    const x = Math.cos(theta) * Math.cos(phi);
+    const y = Math.sin(phi);
+    const z = Math.sin(theta) * Math.cos(phi);
+    return [x,y,z];
+}
+let lookdir = polar2cartesian(theta, phi);
+
+canvas.addEventListener('click', () => {
+    canvas.requestPointerLock();
+});
+
+document.addEventListener('pointerlockchange', () => {
+    if (document.pointerLockElement === canvas) {
+        document.addEventListener('mousemove', onMouseMove, false);
+    } else {
+        document.removeEventListener('mousemove', onMouseMove, false);
+    }
+}, false);
+
+function onMouseMove(event) {
+    const sensitivity = 0.01;
+    const deltaX = event.movementX || 0; 
+    const deltaY = event.movementY || 0;
+    theta += deltaX * sensitivity;
+    theta = theta % (Math.PI*2)
+    phi -= deltaY * sensitivity;
+    phi = Math.min(Math.max(phi, -Math.PI/2), Math.PI / 2);
+}
+
+function getTarget(lookdir, camera){
+    let [xc, yc, zc] = camera;
+    let [xl, yl, zl] = lookdir;
+    return [xc+xl, yc+yl, zc+zl];
+}
+
+const keysPressed = {};
+
+window.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    console.log(key);
+    if (['w', 'a', 's', 'd', 'control', 'shift'].includes(key)) keysPressed[key] = true;
+});
+
+window.addEventListener('keyup', (e) => {
+    const key = e.key.toLowerCase();
+    if (['w', 'a', 's', 'd', 'control', 'shift'].includes(key)) keysPressed[key] = false;
+});
+
+function updatePosition(lookdir, deltaTime, speed = 0.05) {
+    const upvec = vec3.fromValues(up[0], up[1], up[2]);
+    const front = vec3.fromValues(lookdir[0], lookdir[1], lookdir[2]);
+    vec3.normalize(front, front);
+    const right = vec3.create();
+    vec3.cross(right, front, up);
+    vec3.normalize(right, right);
+    if (keysPressed['w']) {
+        xpos += front[0] * speed * deltaTime;
+        zpos += front[2] * speed * deltaTime;
+    }
+    if (keysPressed['s']) {
+        xpos -= front[0] * speed * deltaTime;
+        zpos -= front[2] * speed * deltaTime;
+    }
+    if (keysPressed['a']) {
+        xpos -= right[0] * speed * deltaTime;
+        zpos -= right[2] * speed * deltaTime;
+    }
+    if (keysPressed['d']) {
+        xpos += right[0] * speed * deltaTime;
+        zpos += right[2] * speed * deltaTime;
+    }
+    if (keysPressed['control']) {
+        ypos += speed * deltaTime;
+    }
+    if (keysPressed['shift']) {
+        ypos -= speed * deltaTime;
+        console.log(phi, theta, xpos, ypos, zpos);
+    }
+}
+
+
+class Object3D {
+    constructor(gl, obj, normalize=true, scale=1, color=[0.5, 0.5, 0.5], center=[0,0,0], rotation=[0,0,0]) {
+        this.gl = gl;
+        this.obj = obj;
+        this.color = color;
+        this.center = center;
+        this.rotation = rotation;
+        let [xmin, ymin, zmin] = this.obj.bboxMin;
+        let [xmax, ymax, zmax] = this.obj.bboxMax;
+        let minscale = Math.min(xmax-xmin, ymax-ymin, zmax-zmin);
+        if(minscale<1){minscale=1}
+        this.scale = [(xmax-xmin)/minscale*scale, (ymax-ymin)/minscale*scale, (zmax-zmin)/minscale*scale];
+        this.normalize = normalize;
+        this.initBuffers();
+    }
+    initBuffers() {
+        // box positions to unit cube
+        let pos = [];
+        for(let i=0; i<this.obj.vertexPos.length; i++){
+            if(this.normalize){
+                let min = this.obj.bboxMin[i%3];
+                let max = this.obj.bboxMax[i%3];
+                pos.push((((this.obj.vertexPos[i]-min)/(max-min))*2-1)*this.scale[i%3]);
+            } else {
+                pos.push(this.obj.vertexPos[i]);
+            }
+        }
+        this.positionBuffer = this.createBuffer(pos);
+        this.normalBuffer = this.createBuffer(this.obj.vertexNormals);
+        this.indexBuffer = this.createBuffer(this.obj.triangleIndices, this.gl.ELEMENT_ARRAY_BUFFER);
+        this.indexCount = this.obj.triangleIndices.length;
+        this.texcoordsBuffer = this.createBuffer(this.obj.vertexTextureCoords);
+    }
+    createBuffer(data, type = this.gl.ARRAY_BUFFER) {
+        const buffer = this.gl.createBuffer();
+        this.gl.bindBuffer(type, buffer);
+        this.gl.bufferData(type, new (type === this.gl.ELEMENT_ARRAY_BUFFER ? Uint16Array : Float32Array)(data), this.gl.STATIC_DRAW);
+        return buffer;
+    }
+    draw(programInfo, eyePosition, target, up, mode=0) {
+        const gl = this.gl;
+
+        // transforms
+        const tModel = mat4.create(); // Model matrix
+        const tCamera = mat4.create(); // Camera (view) matrix
+        const tProjection = mat4.create(); // Projection matrix
+        const tMV = mat4.create(); // ModelView matrix
+        const tMVn = mat3.create(); // Normal matrix
+        const tMn = mat3.create(); // Normal model matrix
+        const tMVP = mat4.create(); // ModelViewProjection matrix
+
+        // Model matrix transformations
+        mat4.translate(tModel, tModel, this.center);
+        mat4.rotateX(tModel, tModel, this.rotation[0]);
+        mat4.rotateY(tModel, tModel, this.rotation[1]);
+        mat4.rotateZ(tModel, tModel, this.rotation[2]);
+
+        // Camera setup
+        mat4.lookAt(tCamera, eyePosition, target, up);
+
+        // Projection matrix
+        mat4.perspective(tProjection, Math.PI / 4, this.gl.canvas.width / this.gl.canvas.height, 0.1, 100.0);
+
+        // Combine model and view matrices
+        mat4.multiply(tMV, tCamera, tModel);
+        mat3.normalFromMat4(tMVn, tMV);
+        mat4.multiply(tMVP, tProjection, tMV);
+        mat3.normalFromMat4(tMn, tModel);
+
+        // Set shader attributes and uniforms
+        gl.useProgram(programInfo.program);
+
+        // attributes
+        this.bindAttribute(gl, programInfo.attribLocations.vPosition, this.positionBuffer, 3);
+        this.bindAttribute(gl, programInfo.attribLocations.vNormal, this.normalBuffer, 3);
+        this.bindAttribute(gl, programInfo.attribLocations.vTexCoords, this.texcoordsBuffer, 2);
+
+        // transforms
+        gl.uniformMatrix4fv(programInfo.uniformLocations.uMVMatrix, false, tMV);
+        gl.uniformMatrix3fv(programInfo.uniformLocations.uMVNormalMatrix, false, tMVn);
+        gl.uniformMatrix4fv(programInfo.uniformLocations.uMVPMatrix, false, tMVP);
+        gl.uniformMatrix4fv(programInfo.uniformLocations.uMMatrix, false, tModel);
+        gl.uniformMatrix3fv(programInfo.uniformLocations.uMnMatrix, false, tMn);
+
+        // other uniforms
+        gl.uniform3fv(programInfo.uniformLocations.uObjectColor, this.color);
+        gl.uniform1f(programInfo.uniformLocations.time, time);
+        gl.uniform3fv(programInfo.uniformLocations.uCamera, eyePosition);
+        gl.uniform3fv(programInfo.uniformLocations.uLightColor, lightColor);
+        gl.uniform3fv(programInfo.uniformLocations.uLightDirection, lightDirection);
+        gl.uniform3fv(programInfo.uniformLocations.uCenter, this.center);
+        gl.uniform1f(programInfo.uniformLocations.mode, mode);
+
+        // triangles
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+        gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_SHORT, 0);
+
+        gl.depthMask(true);
+    }
+
+    bindAttribute(gl, location, buffer, numComponents) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.vertexAttribPointer(location, numComponents, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(location);
+    }
+}
+
+function loadShader(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Error compiling shader:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+    }
+
+    return shader;
+}
+
+function createProgram(gl, vertexShader, fragmentShader) {
+    const program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error('Error linking program:', gl.getProgramInfoLog(program));
+        return null;
+    }
+
+    return program;
+}
+
+function main(){
+    // load webgl
+    if (!gl) {
+        console.error('WebGL not supported!');
+        return;
+    }
+
+    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, document.getElementById('vertexShader').textContent);
+    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, document.getElementById('fragmentShader').textContent);
+
+    // create gl program
+    const program = createProgram(gl, vertexShader, fragmentShader);
+    const programInfo = {
+        program,
+        attribLocations: {
+            vPosition: gl.getAttribLocation(program, 'vPosition'),
+            vNormal: gl.getAttribLocation(program, 'vNormal'),
+            vTexCoords: gl.getAttribLocation(program, 'vTexCoords'),
+        },
+        uniformLocations: {
+            uMVMatrix: gl.getUniformLocation(program, 'uMVMatrix'),
+            uMMatrix: gl.getUniformLocation(program, 'uMMatrix'),
+            uMnMatrix: gl.getUniformLocation(program, 'uMnMatrix'),
+            uMVNormalMatrix: gl.getUniformLocation(program, 'uMVNormalMatrix'),
+            uMVPMatrix: gl.getUniformLocation(program, 'uMVPMatrix'),
+            uObjectColor: gl.getUniformLocation(program, 'uObjectColor'),
+            uLightColor: gl.getUniformLocation(program, 'uLightColor'),
+            uLightDirection: gl.getUniformLocation(program, 'uLightDirection'),
+            uCenter: gl.getUniformLocation(program, 'uCenter'),
+            uCamera: gl.getUniformLocation(program, 'uCamera'),
+            time: gl.getUniformLocation(program, 'time'),
+            dirtNormal: gl.getUniformLocation(program, "dirtNormal"),
+            dirtTexture: gl.getUniformLocation(program, "dirtTexture"),
+            stoneNormal: gl.getUniformLocation(program, "stoneNormal"),
+            stoneTexture: gl.getUniformLocation(program, "stoneTexture"),
+            blood: gl.getUniformLocation(program, "blood"),
+            barkNormal: gl.getUniformLocation(program, "barkNormal"),
+            barkTexture: gl.getUniformLocation(program, "barkTexture"),
+            mode: gl.getUniformLocation(program, 'mode'),
+        },
+    };
+
+    function loadTexture(base64_string, textureID) {
+        let texture = gl.createTexture();
+        gl.activeTexture(textureID);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        const level = 0;
+        const internalFormat = gl.RGBA;
+        const width = 1;
+        const height = 1;
+        const border = 0;
+        const srcFormat = gl.RGBA;
+        const srcType = gl.UNSIGNED_BYTE;
+        const pixel = new Uint8Array([0, 0, 255, 255]);
+        gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, width, height, border, srcFormat, srcType, pixel);
+        let image = new Image();
+        image.crossOrigin = "anonymous";
+        image.onload = function() { 
+            gl.activeTexture(textureID);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image);
+            if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
+                gl.generateMipmap(gl.TEXTURE_2D);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            } else {
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            }
+        };
+        image.onerror = function(event) {
+            console.error('Error Event:', event);
+        };
+        image.src = base64_string;
+    }
+
+    function isPowerOf2(value) {
+        return (value & (value - 1)) === 0;
+    }
+
+    loadTexture(dirtNormalString, gl.TEXTURE0);
+    loadTexture(dirtTextureString, gl.TEXTURE1);
+    loadTexture(stoneNormalString, gl.TEXTURE2);
+    loadTexture(stoneTextureString, gl.TEXTURE3);
+    loadTexture(bloodString, gl.TEXTURE4);
+    loadTexture(barkNormalString, gl.TEXTURE5);
+    loadTexture(barkTextureString, gl.TEXTURE6);
+    
+    // objects
+    let s = 0.4;
+
+    // hill
+    const x_length = 15;
+    const z_length = 15;
+    let hill = new Object3D(gl, new PerlinPlane(center=[0,0.1,0], w=x_length, h=z_length), normalize=false);
+    hill.color = [1, 1, 1];
+
+    // dead tree
+    let tree = new Object3D(gl, deadtree, normalize=true, scale=1.6);
+    tree.rotation = [-Math.PI/2, 0, 0];
+
+    // moai
+    let moai = new Object3D(gl, moai_model, normalize=true, scale=s);
+
+    // moai positions
+    function generatePositions(numObjs, dist, thresh=0.01) {
+        function randomAngle(){
+            return Math.random()-0.5
+        }
+        const positions = [];
+        const maxTries = 1000;
+        for (let i = 0; i < numObjs; i++) {
+            let tries = 0;
+            let valid = false;
+            let x, z;
+            while (!valid && tries < maxTries) {
+                x = Math.random() * x_length - x_length / 2;
+                z = Math.random() * z_length - z_length / 2;
+                let event = true;
+                if (layeredPerlin(x, z) < 0) {
+                    event = Math.random() > thresh;
+                }
+                console.log(event);
+                valid = event && positions.every(([px, pz]) => {
+                    const dx = px - x;
+                    const dz = pz - z;
+                    return Math.sqrt(dx * dx + dz * dz) >= dist;
+                }) && Math.abs(Math.abs(x)-x_length/2)>=dist && Math.abs(Math.abs(z)-z_length/2)>=dist;
+                tries++;
+            }
+            let c = 0.3+Math.random()*0.4;
+            if (valid) positions.push([x, z, randomAngle(), randomAngle(), randomAngle()*2, c]);
+        }
+        return positions;
+    }
+    let moai_positions = generatePositions(25, 1, thresh=0.5);
+    let tree_positions = generatePositions(5, 3, thresh=1.1);
+
+    // water
+    let water = new Object3D(gl, new Plane(center=[0,0,0], w=x_length, h=z_length), normalize=false);
+    water.color = [3.5, 2.5, 2.5];
+    
+    // render function
+    function render() {
+        time += 1/30;
+        gl.clearColor(0.8, 0.6, 0.6, 1.0);
+        gl.enable(gl.DEPTH_TEST);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        // textures
+        gl.uniform1i(programInfo.uniformLocations.dirtNormal, 0);
+        gl.uniform1i(programInfo.uniformLocations.dirtTexture, 1);
+        gl.uniform1i(programInfo.uniformLocations.stoneNormal, 2);
+        gl.uniform1i(programInfo.uniformLocations.stoneTexture, 3);
+        gl.uniform1i(programInfo.uniformLocations.blood, 4);
+        gl.uniform1i(programInfo.uniformLocations.barkNormal, 5);
+        gl.uniform1i(programInfo.uniformLocations.barkTexture, 6);
+        xpos = Math.max(Math.min(xpos, x_length/2), -x_length/2);
+        zpos = Math.max(Math.min(zpos, z_length/2), -z_length/2);
+        ypos = Math.max(Math.min(ypos, 30), -2);
+        if(ypos<0){
+            lightColor = [0.8,0.4,0.4];
+        } else {
+            lightColor = [0.8,0.8,0.8];
+        }
+        eyePosition = [xpos, ypos, zpos];
+        lookdir = polar2cartesian(theta, phi);
+        var target = getTarget(lookdir, eyePosition);
+        hill.draw(programInfo, eyePosition, target, up, mode=0.0);
+        for(let pos of moai_positions){
+            let [moaix,moaiz,rotx,roty,rotz,c] = pos;
+            moai.rotation = [-Math.PI/2+rotx, roty, Math.PI/2+rotz];
+            moai.center = [moaix,s+layeredPerlin(moaix, moaiz),moaiz];
+            moai.color = [c,c,c];
+            moai.draw(programInfo, eyePosition, target, up, mode=1.0);
+        }
+        water.draw(programInfo, eyePosition, target, up, mode=2.0);
+        for(let pos of tree_positions){
+            let [treex,treez,rotx,roty,rotz,c] = pos;
+            tree.rotation = [-Math.PI/2, roty, Math.PI/2];
+            tree.center = [treex,1.5+layeredPerlin(treex, treez),treez];
+            tree.color = [1.5,1.5,1.5];
+            tree.draw(programInfo, eyePosition, target, up, mode=3.0);
+        }
+        
+        updatePosition(lookdir, 1/30, speed=speed)
+        setTimeout(render, 1000/30);
+    }
+    render();   
+}
+(1.5,0.001)
+main();
+</script>
+</body>

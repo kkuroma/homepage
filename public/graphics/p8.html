@@ -72,7 +72,7 @@
 <div class="container">
     <h1>🗿 Moyai 🗿</h1>
     <p style="padding-top:0; margin-bottom:0;">Click the screen to move around, press ESC to return cursor</p>
-    <p style="margin : 0; padding-top:0;">Use W S A D for directional controls, SHIFT to go down, CTRL to go up</p>
+    <p style="margin : 0; padding-top:0;">Use W S A D for directional controls, SHIFT to go down, SPACE to go up</p>
     <canvas id="glCanvas" width="800" height="600"></canvas> 
 </div>
 <script id="vertexShader" type="x-shader/x-vertex">
@@ -388,45 +388,52 @@ function getTarget(lookdir, camera){
 const keysPressed = {};
 
 window.addEventListener('keydown', (e) => {
-    const key = e.key.toLowerCase();
-    console.log(key);
-    if (['w', 'a', 's', 'd', 'control', 'shift'].includes(key)) keysPressed[key] = true;
+    e.preventDefault();
+    var key = e.key.toLowerCase();
+    if(e.code == "Space"){
+        key = "space";
+    }
+    if (['w', 'a', 's', 'd', 'space', 'shift'].includes(key)) keysPressed[key] = true;
 });
 
 window.addEventListener('keyup', (e) => {
-    const key = e.key.toLowerCase();
-    if (['w', 'a', 's', 'd', 'control', 'shift'].includes(key)) keysPressed[key] = false;
+    var key = e.key.toLowerCase();
+    if(e.code == "Space"){
+        key = "space";
+    }
+    if (['w', 'a', 's', 'd', 'space', 'shift'].includes(key)) keysPressed[key] = false;
 });
 
 function updatePosition(lookdir, deltaTime, speed = 0.05) {
-    const upvec = vec3.fromValues(up[0], up[1], up[2]);
-    const front = vec3.fromValues(lookdir[0], lookdir[1], lookdir[2]);
-    vec3.normalize(front, front);
-    const right = vec3.create();
-    vec3.cross(right, front, up);
-    vec3.normalize(right, right);
-    if (keysPressed['w']) {
-        xpos += front[0] * speed * deltaTime;
-        zpos += front[2] * speed * deltaTime;
-    }
-    if (keysPressed['s']) {
-        xpos -= front[0] * speed * deltaTime;
-        zpos -= front[2] * speed * deltaTime;
-    }
-    if (keysPressed['a']) {
-        xpos -= right[0] * speed * deltaTime;
-        zpos -= right[2] * speed * deltaTime;
-    }
-    if (keysPressed['d']) {
-        xpos += right[0] * speed * deltaTime;
-        zpos += right[2] * speed * deltaTime;
-    }
-    if (keysPressed['control']) {
-        ypos += speed * deltaTime;
-    }
-    if (keysPressed['shift']) {
-        ypos -= speed * deltaTime;
-        console.log(phi, theta, xpos, ypos, zpos);
+    if (document.pointerLockElement === canvas){
+        const upvec = vec3.fromValues(up[0], up[1], up[2]);
+        const front = vec3.fromValues(lookdir[0], lookdir[1], lookdir[2]);
+        vec3.normalize(front, front);
+        const right = vec3.create();
+        vec3.cross(right, front, up);
+        vec3.normalize(right, right);
+        if (keysPressed['w']) {
+            xpos += front[0] * speed * deltaTime;
+            zpos += front[2] * speed * deltaTime;
+        }
+        if (keysPressed['s']) {
+            xpos -= front[0] * speed * deltaTime;
+            zpos -= front[2] * speed * deltaTime;
+        }
+        if (keysPressed['a']) {
+            xpos -= right[0] * speed * deltaTime;
+            zpos -= right[2] * speed * deltaTime;
+        }
+        if (keysPressed['d']) {
+            xpos += right[0] * speed * deltaTime;
+            zpos += right[2] * speed * deltaTime;
+        }
+        if (keysPressed['space']) {
+            ypos += speed * deltaTime;
+        }
+        if (keysPressed['shift']) {
+            ypos -= speed * deltaTime;
+        }
     }
 }
 
@@ -690,7 +697,6 @@ function main(){
                 if (layeredPerlin(x, z) < 0) {
                     event = Math.random() > thresh;
                 }
-                console.log(event);
                 valid = event && positions.every(([px, pz]) => {
                     const dx = px - x;
                     const dz = pz - z;

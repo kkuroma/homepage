@@ -376,7 +376,7 @@ function onMouseMove(event) {
     theta += deltaX * sensitivity;
     theta = theta % (Math.PI*2)
     phi -= deltaY * sensitivity;
-    phi = Math.min(Math.max(phi, -Math.PI/2), Math.PI / 2);
+    phi = Math.min(Math.max(phi, -Math.PI/2+0.001), Math.PI/2-0.001);
 }
 
 function getTarget(lookdir, camera){
@@ -388,7 +388,9 @@ function getTarget(lookdir, camera){
 const keysPressed = {};
 
 window.addEventListener('keydown', (e) => {
-    e.preventDefault();
+    if (document.pointerLockElement === canvas){
+        e.preventDefault();
+    }
     var key = e.key.toLowerCase();
     if(e.code == "Space"){
         key = "space";
@@ -407,7 +409,7 @@ window.addEventListener('keyup', (e) => {
 function updatePosition(lookdir, deltaTime, speed = 0.05) {
     if (document.pointerLockElement === canvas){
         const upvec = vec3.fromValues(up[0], up[1], up[2]);
-        const front = vec3.fromValues(lookdir[0], lookdir[1], lookdir[2]);
+        const front = vec3.fromValues(lookdir[0], 0, lookdir[2]);
         vec3.normalize(front, front);
         const right = vec3.create();
         vec3.cross(right, front, up);
@@ -718,7 +720,7 @@ function main(){
     
     // render function
     function render() {
-        time += 1/30;
+        time += 1/60;
         gl.clearColor(0.8, 0.6, 0.6, 1.0);
         gl.enable(gl.DEPTH_TEST);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -734,7 +736,7 @@ function main(){
         gl.uniform1i(programInfo.uniformLocations.barkTexture, 6);
         xpos = Math.max(Math.min(xpos, x_length/2), -x_length/2);
         zpos = Math.max(Math.min(zpos, z_length/2), -z_length/2);
-        ypos = Math.max(Math.min(ypos, 30), -2);
+        ypos = Math.max(Math.min(ypos, 30), -0.2);
         if(ypos<0){
             lightColor = [0.8,0.4,0.4];
         } else {
@@ -760,8 +762,8 @@ function main(){
             tree.draw(programInfo, eyePosition, target, up, mode=3.0);
         }
         
-        updatePosition(lookdir, 1/30, speed=speed)
-        setTimeout(render, 1000/30);
+        updatePosition(lookdir, 1/60, speed=speed)
+        setTimeout(render, 1000/60);
     }
     render();   
 }
